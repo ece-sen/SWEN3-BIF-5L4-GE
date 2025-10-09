@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using Paperless.DAL;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -7,7 +9,20 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Add DbContext with SQL Server provider
+builder.Services.AddDbContext<DMSDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DMSDb")));
+
+builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();
+
 var app = builder.Build();
+
+// Ensure database is created and apply migrations
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<DMSDbContext>();
+    db.Database.Migrate(); // Apply any pending migrations
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
