@@ -1,5 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Runtime.InteropServices;
+using Microsoft.AspNetCore.Mvc;
+using Paperless.DAL;
 using Paperless.Models;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Paperless.REST.Controllers
 {
@@ -7,46 +10,46 @@ namespace Paperless.REST.Controllers
     [Route("api/[controller]")]
     public class DMSController : ControllerBase
     {
-        private static readonly List<Document> Documents = new()
+        private readonly IDocumentRepository _repository;
+
+        public DMSController(IDocumentRepository repository)
         {
-            new Document { Id = 1, Title = "Invoice 2025-01", Category = "Finance" },
-            new Document { Id = 2, Title = "Employee Contract", Category = "HR" },
-            new Document { Id = 3, Title = "Product Manual", Category = "Tech" },
-        };
+            _repository = repository;
+        }
 
         [HttpGet]
-        public ActionResult<IEnumerable<Document>> GetAll()
+        public async Task<ActionResult<IEnumerable<Document>>> GetAll()
         {
-            return Ok(Documents);
+            var documents = await _repository.GetAllDocumentsAsync();
+            return Ok(documents);
         }
 
         [HttpGet("{id}")]
-        public ActionResult<Document> GetById(int id)
+        public async Task<ActionResult<Document>> GetById(int id)
         {
-            var doc = Documents.FirstOrDefault(d => d.Id == id);
+            var doc = await _repository.GetDocumentByIdAsync(id);
             if (doc == null)
                 return NotFound($"Document with ID {id} not found.");
             return Ok(doc);
         }
 
         [HttpPost]
-        public ActionResult<Document> Create([FromBody] Document newDoc)
+        public async Task<ActionResult<Document>> Create([FromBody] Document newDoc)
         {
-            newDoc.Id = Documents.Max(d => d.Id) + 1;
-            Documents.Add(newDoc);
+            var created = await _repository.AddDocumentAsync(newDoc);
 
             // 201 Created + Rückgabe-Link
-            return CreatedAtAction(nameof(GetById), new { id = newDoc.Id }, newDoc);
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
         [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            var doc = Documents.FirstOrDefault(d => d.Id == id);
+            var doc = await _repository.GetDocumentByIdAsync(id);
             if (doc == null)
                 return NotFound();
 
-            Documents.Remove(doc);
+            await _repository.DeleteDocumentAsync(id);
             return NoContent();
         }
     }
