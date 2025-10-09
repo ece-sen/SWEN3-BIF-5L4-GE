@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Paperless.REST", "Paperless
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Paperless.Models", "..\Paperless.Models\Paperless.Models.csproj", "{0E5A45D1-DF3F-44A4-A4D8-27B2E9C6C998}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Paperless.DAL", "..\Paperless.DAL\Paperless.DAL.csproj", "{26D4A5D8-3CF3-4635-8DB9-5C0DB430A639}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{0E5A45D1-DF3F-44A4-A4D8-27B2E9C6C998}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0E5A45D1-DF3F-44A4-A4D8-27B2E9C6C998}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0E5A45D1-DF3F-44A4-A4D8-27B2E9C6C998}.Release|Any CPU.Build.0 = Release|Any CPU
+		{26D4A5D8-3CF3-4635-8DB9-5C0DB430A639}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{26D4A5D8-3CF3-4635-8DB9-5C0DB430A639}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{26D4A5D8-3CF3-4635-8DB9-5C0DB430A639}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{26D4A5D8-3CF3-4635-8DB9-5C0DB430A639}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
