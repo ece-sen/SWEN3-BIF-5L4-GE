@@ -13,6 +13,8 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<DMSDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DMSDb")));
 
+builder.Services.AddScoped<IDMSDbContext>(provider => provider.GetRequiredService<DMSDbContext>());
+
 builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();
 
 var app = builder.Build();

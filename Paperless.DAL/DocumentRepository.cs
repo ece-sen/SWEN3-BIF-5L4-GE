@@ -5,10 +5,10 @@ namespace Paperless.DAL
 {
     public class DocumentRepository : IDocumentRepository
     {
-        private readonly DMSDbContext _context;
+        private readonly IDMSDbContext _context;
         
         // DbContext via Dependency Injection
-        public DocumentRepository(DMSDbContext context)
+        public DocumentRepository(IDMSDbContext context)
         {
             _context = context;
         }

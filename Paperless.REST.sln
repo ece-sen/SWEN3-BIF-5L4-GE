@@ -11,6 +11,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Paperless.DAL", "Paperless.
 EndProject
 Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{81DDED9D-158B-E303-5F62-77A2896D2A5A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Paperless.Unittests", "..\Paperless.Unittests\Paperless.Unittests.csproj", "{1C3CB114-EB7E-40DF-9D88-90565E237842}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0E5A45D1-DF3F-44A4-A4D8-27B2E9C6C998} = {0E5A45D1-DF3F-44A4-A4D8-27B2E9C6C998}
+		{26D4A5D8-3CF3-4635-8DB9-5C0DB430A639} = {26D4A5D8-3CF3-4635-8DB9-5C0DB430A639}
+		{81DDED9D-158B-E303-5F62-77A2896D2A5A} = {81DDED9D-158B-E303-5F62-77A2896D2A5A}
+		{DCB12ACA-3E53-4F41-BB71-B5CDBE0408B9} = {DCB12ACA-3E53-4F41-BB71-B5CDBE0408B9}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +41,10 @@ Global
 		{81DDED9D-158B-E303-5F62-77A2896D2A5A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{81DDED9D-158B-E303-5F62-77A2896D2A5A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{81DDED9D-158B-E303-5F62-77A2896D2A5A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1C3CB114-EB7E-40DF-9D88-90565E237842}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1C3CB114-EB7E-40DF-9D88-90565E237842}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1C3CB114-EB7E-40DF-9D88-90565E237842}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1C3CB114-EB7E-40DF-9D88-90565E237842}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
