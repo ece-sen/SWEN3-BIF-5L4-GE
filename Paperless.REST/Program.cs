@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Paperless.DAL;
+using Paperless.Services.Mappings;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -16,6 +17,8 @@ builder.Services.AddDbContext<DMSDbContext>(options =>
 builder.Services.AddScoped<IDMSDbContext>(provider => provider.GetRequiredService<DMSDbContext>());
 
 builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();
+
+builder.Services.AddAutoMapper(typeof(DocumentProfile).Assembly);
 
 var app = builder.Build();
 

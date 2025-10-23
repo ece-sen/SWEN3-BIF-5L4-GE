@@ -1,8 +1,7 @@
-﻿using System.Runtime.InteropServices;
-using Microsoft.AspNetCore.Mvc;
-using Paperless.DAL;
+﻿using Microsoft.AspNetCore.Mvc;
+using Paperless.DTOs;
 using Paperless.Models;
-using Swashbuckle.AspNetCore.SwaggerGen;
+using Paperless.Services;
 
 namespace Paperless.REST.Controllers
 {
@@ -10,33 +9,33 @@ namespace Paperless.REST.Controllers
     [Route("api/[controller]")]
     public class DMSController : ControllerBase
     {
-        private readonly IDocumentRepository _repository;
+        private readonly IDocumentService _documentService;
 
-        public DMSController(IDocumentRepository repository)
+        public DMSController(IDocumentService documentService)
         {
-            _repository = repository;
+            _documentService = documentService;
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Document>>> GetAll()
+        public async Task<ActionResult<IEnumerable<DocumentDto>>> GetAll()
         {
-            var documents = await _repository.GetAllDocumentsAsync();
+            var documents = await _documentService.GetAllDocumentsAsync();
             return Ok(documents);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Document>> GetById(int id)
+        public async Task<ActionResult<DocumentDto>> GetById(int id)
         {
-            var doc = await _repository.GetDocumentByIdAsync(id);
+            var doc = await _documentService.GetDocumentByIdAsync(id);
             if (doc == null)
                 return NotFound($"Document with ID {id} not found.");
             return Ok(doc);
         }
 
         [HttpPost]
-        public async Task<ActionResult<Document>> Create([FromBody] Document newDoc)
+        public async Task<ActionResult<DocumentDto>> Create([FromBody] DocumentDto newDoc)
         {
-            var created = await _repository.AddDocumentAsync(newDoc);
+            var created = await _documentService.CreateDocumentAsync(newDoc);
 
             // 201 Created + Rückgabe-Link
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
@@ -45,11 +44,10 @@ namespace Paperless.REST.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var doc = await _repository.GetDocumentByIdAsync(id);
-            if (doc == null)
+            var doc = await _documentService.DeleteDocumentAsync(id);
+            if (!doc)
                 return NotFound();
-
-            await _repository.DeleteDocumentAsync(id);
+            
             return NoContent();
         }
     }
