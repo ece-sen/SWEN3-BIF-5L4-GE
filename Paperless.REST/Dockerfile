@@ -15,6 +15,8 @@ WORKDIR /src
 COPY ["Paperless.REST/Paperless.REST.csproj", "Paperless.REST/"]
 COPY ["Paperless.DAL/Paperless.DAL.csproj", "Paperless.DAL/"]
 COPY ["Paperless.Models/Paperless.Models.csproj", "Paperless.Models/"]
+COPY ["Paperless.DTOs/Paperless.DTOs.csproj", "Paperless.DTOs/"]          
+COPY ["Paperless.Services/Paperless.Services.csproj", "Paperless.Services/"] 
 RUN dotnet restore "./Paperless.REST/Paperless.REST.csproj"
 COPY . .
 WORKDIR "/src/Paperless.REST"
