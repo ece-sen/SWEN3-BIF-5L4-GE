@@ -23,7 +23,18 @@ builder.Services.AddScoped<IDocumentService, DocumentService>();
 
 builder.Services.AddAutoMapper(typeof(DocumentProfile).Assembly);
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend",
+        policy => policy.WithOrigins("http://localhost:5173")
+            .AllowAnyHeader()
+            .AllowAnyMethod());
+});
+
 var app = builder.Build();
+
+app.UseCors("AllowFrontend");
+
 
 // Ensure database is created and apply migrations
 using (var scope = app.Services.CreateScope())
