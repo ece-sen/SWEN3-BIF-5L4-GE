@@ -34,7 +34,23 @@ services:
         condition: service_healthy                  
     networks:
       - paperless_network
-    restart: on-failure                             
+    restart: on-failure    
+    
+  paperless.frontend:
+      image: ${DOCKER_REGISTRY-}paperlessfrontend
+      build:
+        context: ./frontend
+        dockerfile: Dockerfile
+      container_name: paperless_frontend
+      ports:
+        - "8080:80"
+      environment:
+        - REACT_APP_API_BASE_URL=http://paperless.rest:8080
+      depends_on:
+        - paperless.rest
+      networks:
+        - paperless_network
+      restart: on-failure
 
 volumes:
   postgres_data:
