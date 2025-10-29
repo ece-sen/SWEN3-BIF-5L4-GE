@@ -37,20 +37,4 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-main {
-  padding: 1rem;
-}
-
-h1 {
-  margin-bottom: 1rem;
-}
-
-ul {
-  list-style: none;
-  padding: 0;
-}
-
-li {
-  margin: 0.5rem 0;
-}
 </style>
