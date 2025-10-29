@@ -16,7 +16,7 @@ const route = useRoute()
 const document = ref<any>(null)
 
 onMounted(async () => {
-  const res = await fetch(`http://localhost:5000/api/documents/${route.params.id}`)
+  const res = await fetch(`http://localhost:8081/api/DMS/${route.params.id}`)
   document.value = await res.json()
 })
 </script>

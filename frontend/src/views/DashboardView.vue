@@ -25,7 +25,7 @@ const documents = ref<Document[]>([])
 
 onMounted(async () => {
   try {
-    const response = await fetch('http://localhost:5000/api/documents')
+    const response = await fetch('http://localhost:8081/api/DMS')
     if (!response.ok) {
       throw new Error(`Request failed with status ${response.status}`)
     }
