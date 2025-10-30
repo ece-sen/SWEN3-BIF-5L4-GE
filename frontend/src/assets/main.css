@@ -1,0 +1,32 @@
+@import './base.css';
+
+body {
+  background-color: #121212;
+  color: #ddd;
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+}
+
+#app {
+  margin: 0;
+  padding: 2rem;
+  font-weight: normal;
+  display: block;
+  max-width: 900px;
+}
+
+a {
+  text-decoration: none;
+  color: #42b883;
+  transition: 0.3s;
+}
+
+  a:hover {
+    color: #58d19d;
+  }
+
+@media (min-width: 1024px) {
+  #app {
+    padding: 3rem;
+  }
+}
