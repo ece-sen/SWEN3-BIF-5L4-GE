@@ -4,7 +4,21 @@
       "commandName": "DockerCompose",
       "commandVersion": "1.0",
       "serviceActions": {
-        "paperless.rest": "StartDebugging"
+        "paperless.rest": "StartDebugging",
+        "paperless.frontend": "StartWithoutDebugging",
+        "postgres": "StartWithoutDebugging"
+      }
+    },
+    "Frontend": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "composeLaunchAction": "LaunchBrowser",
+      "composeLaunchServiceName": "paperless.rest",
+      "composeLaunchUrl": "http://localhost:8080",
+      "serviceActions": {
+        "paperless.frontend": "StartWithoutDebugging",
+        "paperless.rest": "StartDebugging",
+        "postgres": "StartWithoutDebugging"
       }
     }
   }
