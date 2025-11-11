@@ -1,14 +1,45 @@
 <template>
   <main>
-    <h1>Documents</h1>
+    <h1>Document Dashboard</h1>
 
-    <ul>
-      <li v-for="doc in documents" :key="doc.id">
-        <router-link :to="`/details/${doc.id}`">
-          {{ doc.title }} – {{ doc.category }}
-        </router-link>
-      </li>
-    </ul>
+    <!-- Upload Section -->
+    <section class="card">
+      <h2>Create new document</h2>
+      <form @submit.prevent="createDocument" class="form">
+        <input
+          type="text"
+          v-model="newTitle"
+          placeholder="Document Title"
+          required
+        />
+        <input
+          type="text"
+          v-model="newCategory"
+          placeholder="Category"
+          required
+        />
+        <button type="submit">Create</button>
+      </form>
+    </section>
+
+    <!-- Documents List -->
+    <section class="card">
+      <h2>Available Documents</h2>
+
+      <div v-if="loading" class="loading">Loading documents...</div>
+      <ul v-else>
+        <li
+          v-for="doc in documents"
+          :key="doc.id"
+          class="document-item"
+        >
+          <router-link :to="`/details/${doc.id}`" class="doc-link">
+            {{ doc.title }} <span class="doc-category">({{ doc.category }})</span>
+          </router-link>
+          <button @click="deleteDocument(doc.id)" class="delete-btn">Delete</button>
+        </li>
+      </ul>
+    </section>
   </main>
 </template>
 
@@ -22,19 +53,168 @@ interface Document {
 }
 
 const documents = ref<Document[]>([])
+const loading = ref(true)
 
-onMounted(async () => {
+// Form fields
+const newTitle = ref('')
+const newCategory = ref('')
+
+// Fetch documents from backend
+const fetchDocuments = async () => {
+  loading.value = true
   try {
     const response = await fetch('http://localhost:8081/api/DMS')
-    if (!response.ok) {
-      throw new Error(`Request failed with status ${response.status}`)
-    }
+    if (!response.ok) throw new Error(`Request failed with status ${response.status}`)
     documents.value = await response.json()
   } catch (error) {
     console.error('Error fetching documents:', error)
+  } finally {
+    loading.value = false
   }
-})
+}
+
+// Create new document
+const createDocument = async () => {
+  if (!newTitle.value || !newCategory.value) return
+
+  const payload = { title: newTitle.value, category: newCategory.value }
+
+  try {
+    const response = await fetch('http://localhost:8081/api/DMS', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    if (!response.ok) throw new Error(`Create failed with status ${response.status}`)
+
+    newTitle.value = ''
+    newCategory.value = ''
+    fetchDocuments()
+  } catch (error) {
+    console.error('Error creating document:', error)
+  }
+}
+
+// Delete document
+const deleteDocument = async (id: number) => {
+  if (!confirm('Are you sure you want to delete this document?')) return
+
+  try {
+    const response = await fetch(`http://localhost:8081/api/DMS/${id}`, {
+      method: 'DELETE'
+    })
+    if (!response.ok) throw new Error(`Delete failed with status ${response.status}`)
+
+    documents.value = documents.value.filter(d => d.id !== id)
+  } catch (error) {
+    console.error('Error deleting document:', error)
+  }
+}
+
+onMounted(fetchDocuments)
 </script>
 
 <style scoped>
+main {
+  padding: 2rem;
+  background-color: #f9fafb;
+  min-height: 100vh;
+  font-family: Arial, sans-serif;
+  animation: fadeIn 0.4s ease-in-out;
+}
+
+h1 {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 1.5rem;
+  color: #1f2937;
+}
+
+h2 {
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  color: #374151;
+}
+
+.card {
+  background-color: #fff;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  margin-bottom: 2rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 50%;
+}
+
+input[type="text"] {
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid #d1d5db;
+}
+
+button {
+  background-color: #2563eb;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+button:hover {
+  background-color: #1d4ed8;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+.document-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.doc-link {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.doc-link:hover {
+  text-decoration: underline;
+}
+
+.doc-category {
+  color: #6b7280;
+}
+
+.delete-btn {
+  background-color: #dc2626;
+  padding: 0.25rem 0.5rem;
+}
+
+.delete-btn:hover {
+  background-color: #b91c1c;
+}
+
+.loading {
+  color: #6b7280;
+  font-style: italic;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 </style>
