@@ -2,6 +2,10 @@
   <main>
     <h1>Document Dashboard</h1>
 
+    <!-- Error Section-->
+    <div v-if="errorMessage" class="error-banner">
+      {{ errorMessage }}
+    </div>
     <!-- Upload Section -->
     <section class="card">
       <h2>Create new document</h2>
@@ -54,6 +58,7 @@ interface Document {
 
 const documents = ref<Document[]>([])
 const loading = ref(true)
+const errorMessage = ref<string | null>(null)
 
 // Form fields
 const newTitle = ref('')
@@ -62,21 +67,32 @@ const newCategory = ref('')
 // Fetch documents from backend
 const fetchDocuments = async () => {
   loading.value = true
+  errorMessage.value = null
   try {
     const response = await fetch('http://localhost:8081/api/DMS')
-    if (!response.ok) throw new Error(`Request failed with status ${response.status}`)
+    if (!response.ok) {
+        const err = await response.json().catch(() => ({}))
+        throw new Error(err.message || `Server returned ${response.status}`)
+      }
     documents.value = await response.json()
-  } catch (error) {
+  } 
+  catch (error: any) {
     console.error('Error fetching documents:', error)
-  } finally {
+    errorMessage.value = error.message || 'Failed to load documents.'
+  } 
+  finally {
     loading.value = false
   }
 }
 
 // Create new document
 const createDocument = async () => {
-  if (!newTitle.value || !newCategory.value) return
+  errorMessage.value = null
 
+  if (!newTitle.value || !newCategory.value) {
+    errorMessage.value = 'Please enter both title and category.'
+    return
+  }
   const payload = { title: newTitle.value, category: newCategory.value }
 
   try {
@@ -85,29 +101,38 @@ const createDocument = async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     })
-    if (!response.ok) throw new Error(`Create failed with status ${response.status}`)
-
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}))
+      throw new Error(err.message || `Create failed with status ${response.status}`)
+    }
     newTitle.value = ''
     newCategory.value = ''
     fetchDocuments()
-  } catch (error) {
+  } 
+  catch (error: any) {
     console.error('Error creating document:', error)
+    errorMessage.value = error.message || 'Failed to create document.'
   }
 }
 
 // Delete document
 const deleteDocument = async (id: number) => {
   if (!confirm('Are you sure you want to delete this document?')) return
+  errorMessage.value = null
 
   try {
     const response = await fetch(`http://localhost:8081/api/DMS/${id}`, {
       method: 'DELETE'
     })
-    if (!response.ok) throw new Error(`Delete failed with status ${response.status}`)
-
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}))
+      throw new Error(err.message || `Delete failed with status ${response.status}`)
+    }
     documents.value = documents.value.filter(d => d.id !== id)
-  } catch (error) {
+  } 
+  catch (error: any) {
     console.error('Error deleting document:', error)
+    errorMessage.value = error.message || 'Failed to delete document.'
   }
 }
 
@@ -217,4 +242,15 @@ ul {
   from { opacity: 0; transform: translateY(5px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+.error-banner {
+  background-color: #fee2e2;
+  color: #991b1b;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  font-weight: 500;
+  border: 1px solid #fecaca;
+}
+
 </style>
