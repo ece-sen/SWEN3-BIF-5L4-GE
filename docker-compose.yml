@@ -52,7 +52,29 @@ services:
         condition: service_healthy                  
     networks:
       - paperless_network
-    restart: on-failure    
+    restart: on-failure 
+    
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"  
+      - "15672:15672" 
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - paperless_network
+
+  ocrworker:
+    build:
+      context: ./Paperless.OcrWorker
+      dockerfile: Dockerfile
+    container_name: ocrworker
+    depends_on:
+      - rabbitmq
+    networks:
+      - paperless_network
 
 volumes:
   postgres_data:

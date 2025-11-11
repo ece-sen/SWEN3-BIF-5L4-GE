@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Paperless.DAL;
 using Paperless.Services.Mappings;
 using Paperless.Services;
+using Paperless.Services.Messaging;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,7 @@ builder.Services.AddScoped<IDMSDbContext>(provider => provider.GetRequiredServic
 builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();
 builder.Services.AddScoped<IDocumentService, DocumentService>();
 builder.Services.AddAutoMapper(typeof(DocumentProfile).Assembly);
+builder.Services.AddSingleton<IMessageProducer, RabbitMqProducer>();
 
 
 builder.Services.AddCors(options =>
