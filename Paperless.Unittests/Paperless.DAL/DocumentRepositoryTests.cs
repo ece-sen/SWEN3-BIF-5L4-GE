@@ -1,5 +1,6 @@
 using FakeItEasy;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Paperless.DAL;
 using Paperless.Models;
 
@@ -11,19 +12,17 @@ namespace Paperless.Unittests.Paperless.DAL
         private IDMSDbContext _fakeContext = null!;
         private DocumentRepository _repository = null!;
         private DbSet<Document> _fakeSet = null!;
+        private ILogger<DocumentRepository> _fakeLogger = null!;
 
         [SetUp]
         public void Setup()
         {
-            // Fakes erstellen
             _fakeSet = A.Fake<DbSet<Document>>();
             _fakeContext = A.Fake<IDMSDbContext>();
-
-            // DbSet-Property verbinden
+            _fakeLogger = A.Fake<ILogger<DocumentRepository>>();
             A.CallTo(() => _fakeContext.Documents).Returns(_fakeSet);
 
-            // Repository initialisieren
-            _repository = new DocumentRepository(_fakeContext);
+            _repository = new DocumentRepository(_fakeContext, _fakeLogger);
         }
 
         [TearDown]

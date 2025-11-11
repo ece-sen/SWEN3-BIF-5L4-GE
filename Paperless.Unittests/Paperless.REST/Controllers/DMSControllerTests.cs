@@ -8,6 +8,7 @@ using Paperless.Models;
 using Paperless.REST.Controllers;
 using Paperless.Services;
 using Paperless.DTOs;
+using Microsoft.Extensions.Logging;
 
 namespace Paperless.Unittests.Paperless.REST.Controllers
 {
@@ -16,12 +17,14 @@ namespace Paperless.Unittests.Paperless.REST.Controllers
     {
         private DMSController _controller = null!;
         private IDocumentService _fakeService = null!;
+        private ILogger<DMSController> _fakeLogger = null!;
 
         [SetUp]
         public void Setup()
         {
             _fakeService = A.Fake<IDocumentService>();
-            _controller = new DMSController(_fakeService);
+            _fakeLogger = A.Fake<ILogger<DMSController>>();
+            _controller = new DMSController(_fakeService, _fakeLogger);
   
         }
 
@@ -124,7 +127,7 @@ namespace Paperless.Unittests.Paperless.REST.Controllers
             var result = await _controller.Delete(404);
 
             // Assert
-            Assert.That(result, Is.TypeOf<NotFoundResult>());
+            Assert.That(result, Is.TypeOf<NotFoundObjectResult>());
         }
     }
 }
