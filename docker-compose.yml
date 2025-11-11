@@ -66,16 +66,6 @@ services:
     networks:
       - paperless_network
 
-  ocrworker:
-    build:
-      context: ./Paperless.OcrWorker
-      dockerfile: Dockerfile
-    container_name: ocrworker
-    depends_on:
-      - rabbitmq
-    networks:
-      - paperless_network
-
 volumes:
   postgres_data:
 
