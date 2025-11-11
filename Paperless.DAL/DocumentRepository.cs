@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Paperless.DAL.Exceptions;
 using Paperless.Models;
 
 namespace Paperless.DAL
@@ -14,25 +15,65 @@ namespace Paperless.DAL
         }
         public async Task<List<Document>> GetAllDocumentsAsync()
         {
-            return await _context.Documents.ToListAsync();
+            try
+            {
+                return await _context.Documents.ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new DatabaseOperationException("Error retrieving all documents", ex);
+            }
         }
         public async Task<Document?> GetDocumentByIdAsync(int id)
         {
-            return await _context.Documents.FindAsync(id);
+            try
+            {
+                var document = await _context.Documents.FindAsync(id);
+                if (document == null)
+                    throw new DocumentNotFoundException(id);
+
+                return document;
+            }
+            catch (DocumentNotFoundException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new DatabaseOperationException($"Error fetching document with ID {id}", ex);
+            }
         }
         public async Task<Document> AddDocumentAsync(Document document)
         {
-            _context.Documents.Add(document);
-            await _context.SaveChangesAsync();
-            return document;
+            try
+            {
+                _context.Documents.Add(document);
+                await _context.SaveChangesAsync();
+                return document;
+            }
+            catch (Exception ex)
+            {
+                throw new DatabaseOperationException("Error while saving new document", ex);
+            }
         }
         public async Task DeleteDocumentAsync(int id)
         {
-            var document = await _context.Documents.FindAsync(id);
-            if (document != null)
+            try
             {
+                var document = await _context.Documents.FindAsync(id);
+                if (document == null)
+                    throw new DocumentNotFoundException(id);
+
                 _context.Documents.Remove(document);
                 await _context.SaveChangesAsync();
+            }
+            catch (DocumentNotFoundException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new DatabaseOperationException("Error deleting document", ex);
             }
         }
     }
