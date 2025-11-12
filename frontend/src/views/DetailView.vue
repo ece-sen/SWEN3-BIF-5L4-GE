@@ -4,7 +4,7 @@
 
     <!-- Error Section -->
     <div v-if="errorMessage" class="error-banner">
-      ⚠️ {{ errorMessage }}
+      {{ errorMessage }}
     </div>
 
     <!-- Loading Section -->
