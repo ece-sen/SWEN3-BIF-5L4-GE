@@ -4,7 +4,7 @@ using Paperless.DAL;
 using Paperless.DAL.Exceptions;
 using Paperless.DTOs;
 using Paperless.Models;
-using Paperless.Services.Messaging;
+using Paperless.Services.RabbitMq;
 using Paperless.Services.Exceptions;
 
 namespace Paperless.Services;
@@ -13,14 +13,14 @@ public class DocumentService : IDocumentService
 {
     private readonly IDocumentRepository _repository;
     private readonly IMapper _mapper;
-    private readonly IMessageProducer _messageProducer;
+    private readonly IRabbitMqProducer _queue;
     private readonly ILogger<DocumentService> _logger;
 
-    public DocumentService(IDocumentRepository repository, IMapper mapper, IMessageProducer messageProducer, ILogger<DocumentService> logger)
+    public DocumentService(IDocumentRepository repository, IMapper mapper, IRabbitMqProducer queue, ILogger<DocumentService> logger)
     {
         _repository = repository;
         _mapper = mapper;
-        _messageProducer = messageProducer;
+        _queue = queue;
         _logger = logger;
     }
 
@@ -94,16 +94,7 @@ public class DocumentService : IDocumentService
             _logger.LogInformation("Service: Document '{Title}' created successfully with ID={Id}",
                                    createdDocument.Title, createdDocument.Id);
 
-            try
-            {
-                var createdDto = _mapper.Map<DocumentDto>(createdDocument);
-            
-                await _messageProducer.SendMessageAsync(createdDto, "ocr_queue");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"RabbitMQ publish failed: {ex.Message}");
-            }
+            await _queue.SendMessageAsync(createdDocument.Id.ToString());
 
             return _mapper.Map<DocumentDto>(createdDocument);
         }

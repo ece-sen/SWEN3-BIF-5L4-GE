@@ -47,7 +47,9 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DMSDb=Host=postgres;Port=5432;Database=dmsdb;Username=dms;Password=dms123
-    depends_on:                                     
+    depends_on:
+      rabbitmq:
+        condition: service_started
       postgres:
         condition: service_healthy                  
     networks:
@@ -60,9 +62,20 @@ services:
     ports:
       - "5672:5672"  
       - "9093:15672" 
+    networks:
+      - paperless_network
+
+  paperless_ocrworker:
+    build:
+      context: .
+      dockerfile: Paperless.OcrWorker/Dockerfile
+    container_name: paperless_ocrworker
+    ports:
+      - "8082:8082"
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      - rabbitmq
     networks:
       - paperless_network
 

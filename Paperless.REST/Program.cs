@@ -2,9 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using Paperless.DAL;
 using Paperless.Services;
 using Paperless.Services.Mappings;
+using Paperless.Services.RabbitMq;
 using Serilog;
 using Serilog.AspNetCore;
-using Paperless.Services.Messaging;
 
 
 Log.Logger = new LoggerConfiguration()
@@ -31,7 +31,10 @@ try
     builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();
     builder.Services.AddScoped<IDocumentService, DocumentService>();
     builder.Services.AddAutoMapper(typeof(DocumentProfile).Assembly);
-    builder.Services.AddSingleton<IMessageProducer, RabbitMqProducer>();
+    builder.Services.Configure<RabbitMqSettings>(
+        builder.Configuration.GetSection("RabbitMQ"));
+
+    builder.Services.AddSingleton<IRabbitMqProducer, RabbitMqProducer>();
 
     builder.Services.AddCors(options =>
     {
