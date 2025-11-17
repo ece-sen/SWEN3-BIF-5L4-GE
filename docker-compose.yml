@@ -67,8 +67,8 @@ services:
 
   paperless_ocrworker:
     build:
-      context: .
-      dockerfile: Paperless.OcrWorker/Dockerfile
+      context: ./Paperless.OcrWorker
+      dockerfile: Dockerfile
     container_name: paperless_ocrworker
     ports:
       - "8082:8082"
