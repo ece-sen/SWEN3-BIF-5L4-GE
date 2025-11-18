@@ -14,8 +14,6 @@ services:
       networks:
         - paperless_network
       restart: on-failure
-      labels:
-        - "com.microsoft.visualstudio.debuggee=true"
 
   postgres:
     image: postgres:16
