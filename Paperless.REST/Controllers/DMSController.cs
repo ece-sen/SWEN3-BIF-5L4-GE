@@ -104,6 +104,38 @@ namespace Paperless.REST.Controllers
             }
         }
 
+        [HttpPost("upload")]
+        public async Task<IActionResult> Upload(
+            [FromForm] string title,
+            [FromForm] string category,
+            [FromForm] IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("No file uploaded");
+
+            Directory.CreateDirectory("uploads");
+
+            var extension = Path.GetExtension(file.FileName);
+            var saveName = title + extension; 
+            var savePath = Path.Combine("uploads", saveName);
+
+            using (var stream = System.IO.File.Create(savePath))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            var dto = new DocumentDto
+            {
+                Title = title,     
+                Category = category
+            };
+
+            var created = await _documentService.CreateDocumentAsync(dto);
+
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+        }
+
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {

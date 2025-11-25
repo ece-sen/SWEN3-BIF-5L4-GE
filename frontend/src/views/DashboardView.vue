@@ -26,6 +26,8 @@
       </form>
     </section>
 
+    <input type="file" @change="onFileSelected" />
+
     <!-- Documents List -->
     <section class="card">
       <h2>Available Documents</h2>
@@ -113,6 +115,12 @@ const createDocument = async () => {
     console.error('Error creating document:', error)
     errorMessage.value = error.message || 'Failed to create document.'
   }
+}
+
+const selectedFile = ref<File|null>(null)
+
+function onFileSelected(event: any) {
+  selectedFile.value = event.target.files[0]
 }
 
 // Delete document
