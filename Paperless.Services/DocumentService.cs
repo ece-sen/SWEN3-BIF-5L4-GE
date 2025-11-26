@@ -149,4 +149,53 @@ public class DocumentService : IDocumentService
             throw new DocumentServiceException("Unexpected error while deleting document.", ex);
         }
     }
+
+    public async Task<DocumentDto> UpdateDocumentAsync(int id, DocumentDto dto)
+    {
+        _logger.LogInformation("Service: Updating document {Id}", id);
+
+        try
+        {
+            var existing = await _repository.GetDocumentByIdAsync(id);
+            if (existing == null)
+            {
+                _logger.LogWarning("Service: Document {Id} not found for update", id);
+                throw new DocumentNotFoundException(id);
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.Title))
+                throw new DocumentValidationException("Title cannot be empty.");
+            if (string.IsNullOrWhiteSpace(dto.Category))
+                throw new DocumentValidationException("Category cannot be empty.");
+
+            existing.Title = dto.Title;
+            existing.Category = dto.Category;
+
+            var updated = await _repository.UpdateDocumentAsync(existing);
+
+            _logger.LogInformation("Service: Document {Id} updated successfully", id);
+
+            return _mapper.Map<DocumentDto>(updated);
+        }
+        catch (DocumentNotFoundException)
+        {
+            throw; 
+        }
+        catch (DocumentValidationException ex)
+        {
+            _logger.LogWarning(ex, "Validation failed while updating document {Id}", id);
+            throw;
+        }
+        catch (DatabaseOperationException ex)
+        {
+            _logger.LogError(ex, "Database error while updating document {Id}", id);
+            throw new DocumentServiceException("Error while updating document.", ex);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while updating document {Id}", id);
+            throw new DocumentServiceException("Unexpected error while updating document.", ex);
+        }
+    }
+
 }

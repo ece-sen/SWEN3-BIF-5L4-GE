@@ -14,12 +14,15 @@ namespace Paperless.REST.Controllers
     {
         private readonly IDocumentService _documentService;
         private readonly ILogger<DMSController> _logger;
+        private readonly IConfiguration _config;
 
-        public DMSController(IDocumentService documentService, ILogger<DMSController> logger)
+        public DMSController(IDocumentService documentService, ILogger<DMSController> logger, IConfiguration config)
         {
             _documentService = documentService;
             _logger = logger;
+            _config = config;
         }
+
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<DocumentDto>>> GetAll()
@@ -135,6 +138,78 @@ namespace Paperless.REST.Controllers
                 _logger.LogError(ex, "Unexpected error while deleting document {Id}", id);
                 return StatusCode(500, new { message = "Unexpected error: " + ex.Message });
             }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, [FromBody] DocumentDto dto)
+        {
+            _logger.LogInformation("PUT /api/DMS/{Id} called", id);
+
+            try
+            {
+                var updated = await _documentService.UpdateDocumentAsync(id, dto);
+                _logger.LogInformation("Document {Id} updated successfully", id);
+
+                return Ok(updated);
+            }
+            catch (DocumentNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Document {Id} not found while updating", id);
+                return NotFound(new { message = ex.Message });
+            }
+            catch (DocumentValidationException ex)
+            {
+                _logger.LogWarning(ex, "Validation failed while updating document {Id}", id);
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (DatabaseOperationException ex)
+            {
+                _logger.LogError(ex, "Database operation failed while updating {Id}", id);
+                return StatusCode(500, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error while updating document {Id}", id);
+                return StatusCode(500, new { message = "Unexpected error: " + ex.Message });
+            }
+        }
+
+        [HttpPost("upload")]
+        public async Task<IActionResult> Upload(
+            [FromForm] string title,
+            [FromForm] string category,
+            [FromForm] IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("No file uploaded");
+
+            var uploadPath = _config["UploadSettings:UploadPath"];
+
+            if (string.IsNullOrWhiteSpace(uploadPath))
+                return StatusCode(500, "Upload path not configured.");
+
+            Directory.CreateDirectory(uploadPath);
+
+            var extension = Path.GetExtension(file.FileName);
+            var guid = Guid.NewGuid().ToString();
+            var saveName = $"{title}_{guid}{extension}";
+
+            var fullPath = Path.Combine(uploadPath, saveName);
+
+            using (var stream = System.IO.File.Create(fullPath))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            var dto = new DocumentDto
+            {
+                Title = saveName,
+                Category = category
+            };
+
+            var created = await _documentService.CreateDocumentAsync(dto);
+
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
     }
 }

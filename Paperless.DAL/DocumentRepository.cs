@@ -101,5 +101,34 @@ namespace Paperless.DAL
                 throw new DatabaseOperationException("Error deleting document", ex);
             }
         }
+
+        public async Task<Document> UpdateDocumentAsync(Document document)
+        {
+            _logger.LogInformation("Repository: Updating document with ID={Id}", document.Id);
+
+            try
+            {
+                var existing = await _context.Documents.FindAsync(document.Id);
+                if (existing == null)
+                {
+                    _logger.LogWarning("Repository: Document with ID={Id} not found for update", document.Id);
+                    throw new DocumentNotFoundException(document.Id);
+                }
+
+                existing.Title = document.Title;
+                existing.Category = document.Category;
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Repository: Document {Id} updated successfully", document.Id);
+                return existing;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Repository: Error updating document {Id}", document.Id);
+                throw new DatabaseOperationException($"Error updating document {document.Id}", ex);
+            }
+        }
+
     }
 }

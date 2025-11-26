@@ -6,23 +6,19 @@
     <div v-if="errorMessage" class="error-banner">
       {{ errorMessage }}
     </div>
+
     <!-- Upload Section -->
     <section class="card">
-      <h2>Create new document</h2>
-      <form @submit.prevent="createDocument" class="form">
-        <input
-          type="text"
-          v-model="newTitle"
-          placeholder="Document Title"
+      <h2>Upload new document</h2>
+
+      <form @submit.prevent="uploadDocument" class="form">
+        <input 
+          type="file"
+          @change="onFileSelected"
+          accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.txt"
           required
         />
-        <input
-          type="text"
-          v-model="newCategory"
-          placeholder="Category"
-          required
-        />
-        <button type="submit">Create</button>
+        <button type="submit" :disabled="!selectedFile">Upload</button>
       </form>
     </section>
 
@@ -31,6 +27,7 @@
       <h2>Available Documents</h2>
 
       <div v-if="loading" class="loading">Loading documents...</div>
+
       <ul v-else>
         <li
           v-for="doc in documents"
@@ -38,9 +35,13 @@
           class="document-item"
         >
           <router-link :to="`/details/${doc.id}`" class="doc-link">
-            {{ doc.title }} <span class="doc-category">({{ doc.category }})</span>
+            {{ doc.title }}
+            <span class="doc-category">({{ doc.category }})</span>
           </router-link>
-          <button @click="deleteDocument(doc.id)" class="delete-btn">Delete</button>
+
+          <button @click="deleteDocument(doc.id)" class="delete-btn">
+            Delete
+          </button>
         </li>
       </ul>
     </section>
@@ -60,20 +61,34 @@ const documents = ref<Document[]>([])
 const loading = ref(true)
 const errorMessage = ref<string | null>(null)
 
-// Form fields
-const newTitle = ref('')
-const newCategory = ref('')
+// NEW: Selected File
+const selectedFile = ref<File | null>(null)
+
+// Handle file selection (TypeScript clean fix)
+const onFileSelected = (event: Event) => {
+  const input = event.target as HTMLInputElement
+
+  const file = input.files?.[0]  // file is File | undefined
+  if (!file) {
+    selectedFile.value = null
+    return
+  }
+
+  selectedFile.value = file  // file is guaranteed File here
+}
 
 // Fetch documents from backend
 const fetchDocuments = async () => {
   loading.value = true
   errorMessage.value = null
+
   try {
     const response = await fetch('http://localhost:8081/api/DMS')
     if (!response.ok) {
-        const err = await response.json().catch(() => ({}))
-        throw new Error(err.message || `Server returned ${response.status}`)
-      }
+      const err = await response.json().catch(() => ({}))
+      throw new Error(err.message || `Server returned ${response.status}`)
+    }
+
     documents.value = await response.json()
   } 
   catch (error: any) {
@@ -85,33 +100,48 @@ const fetchDocuments = async () => {
   }
 }
 
-// Create new document
-const createDocument = async () => {
+// Upload document with FormData
+const uploadDocument = async () => {
   errorMessage.value = null
 
-  if (!newTitle.value || !newCategory.value) {
-    errorMessage.value = 'Please enter both title and category.'
+  if (!selectedFile.value) {
+    errorMessage.value = "Please select a file."
     return
   }
-  const payload = { title: newTitle.value, category: newCategory.value }
+
+  const file = selectedFile.value
+
+  // Extract title (filename without extension)
+  const originalName = file.name
+  const dotIndex = originalName.lastIndexOf(".")
+  const title = dotIndex !== -1 ? originalName.substring(0, dotIndex) : originalName
+
+  // Extract category from file extension
+  const ext = originalName.split(".").pop()?.toLowerCase() || "unknown"
+  const category = ext
+
+  const formData = new FormData()
+  formData.append("title", title)
+  formData.append("category", category)
+  formData.append("file", file)
 
   try {
-    const response = await fetch('http://localhost:8081/api/DMS', {
+    const response = await fetch('http://localhost:8081/api/DMS/upload', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: formData
     })
+
     if (!response.ok) {
       const err = await response.json().catch(() => ({}))
-      throw new Error(err.message || `Create failed with status ${response.status}`)
+      throw new Error(err.message || `Upload failed with status ${response.status}`)
     }
-    newTitle.value = ''
-    newCategory.value = ''
-    fetchDocuments()
+
+    selectedFile.value = null
+    await fetchDocuments()
   } 
   catch (error: any) {
-    console.error('Error creating document:', error)
-    errorMessage.value = error.message || 'Failed to create document.'
+    console.error('Error uploading document:', error)
+    errorMessage.value = error.message || 'Failed to upload document.'
   }
 }
 
@@ -124,10 +154,12 @@ const deleteDocument = async (id: number) => {
     const response = await fetch(`http://localhost:8081/api/DMS/${id}`, {
       method: 'DELETE'
     })
+
     if (!response.ok) {
       const err = await response.json().catch(() => ({}))
       throw new Error(err.message || `Delete failed with status ${response.status}`)
     }
+
     documents.value = documents.value.filter(d => d.id !== id)
   } 
   catch (error: any) {
@@ -177,10 +209,11 @@ h2 {
   width: 50%;
 }
 
-input[type="text"] {
+input[type="file"] {
   padding: 0.5rem;
   border-radius: 0.5rem;
   border: 1px solid #d1d5db;
+  background: #fff;
 }
 
 button {
@@ -252,5 +285,4 @@ ul {
   font-weight: 500;
   border: 1px solid #fecaca;
 }
-
 </style>

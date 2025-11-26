@@ -8,4 +8,5 @@ public interface IDocumentRepository
     Task<Document?> GetDocumentByIdAsync(int id);
     Task<Document> AddDocumentAsync(Document document);
     Task DeleteDocumentAsync(int id);
+    Task<Document> UpdateDocumentAsync(Document document);
 }
