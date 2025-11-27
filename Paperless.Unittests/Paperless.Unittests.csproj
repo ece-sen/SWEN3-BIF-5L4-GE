@@ -24,8 +24,21 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Paperless.DAL\Paperless.DAL.csproj" />
+      <ProjectReference Include="..\Paperless.DTOs\Paperless.DTOs.csproj" />
       <ProjectReference Include="..\Paperless.Models\Paperless.Models.csproj" />
+      <ProjectReference Include="..\Paperless.OcrWorker\Paperless.OcrWorker.csproj" />
       <ProjectReference Include="..\Paperless.REST\Paperless.REST.csproj" />
+      <ProjectReference Include="..\Paperless.Services\Paperless.Services.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Paperless.OcrWorker\Services\TestFiles\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="Paperless.OcrWorker\Services\TestFiles\test.pdf">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>

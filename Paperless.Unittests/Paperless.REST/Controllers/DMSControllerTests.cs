@@ -9,6 +9,7 @@ using Paperless.REST.Controllers;
 using Paperless.Services;
 using Paperless.DTOs;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 
 namespace Paperless.Unittests.Paperless.REST.Controllers
 {
@@ -18,13 +19,15 @@ namespace Paperless.Unittests.Paperless.REST.Controllers
         private DMSController _controller = null!;
         private IDocumentService _fakeService = null!;
         private ILogger<DMSController> _fakeLogger = null!;
+        private IConfiguration _fakeConfig = null!;
 
         [SetUp]
         public void Setup()
         {
             _fakeService = A.Fake<IDocumentService>();
             _fakeLogger = A.Fake<ILogger<DMSController>>();
-            _controller = new DMSController(_fakeService, _fakeLogger);
+            _fakeConfig = A.Fake<IConfiguration>();
+            _controller = new DMSController(_fakeService, _fakeLogger, _fakeConfig);
   
         }
 
