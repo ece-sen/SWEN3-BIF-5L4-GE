@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Minio;
+using Minio.DataModel.Args;
 using Paperless.DAL;
 using Paperless.Services;
 using Paperless.Services.Mappings;
@@ -36,6 +38,17 @@ try
 
     builder.Services.AddSingleton<IRabbitMqProducer, RabbitMqProducer>();
 
+    builder.Services.AddSingleton<IMinioClient>(sp =>
+    {
+        var cfg = builder.Configuration.GetSection("Minio");
+        return new MinioClient()
+            .WithEndpoint(cfg["Endpoint"])
+            .WithCredentials(cfg["AccessKey"], cfg["SecretKey"])
+            .WithSSL(Convert.ToBoolean(cfg["UseSSL"]))
+            .Build();
+    });
+
+
     builder.Services.AddCors(options =>
     {
         options.AddPolicy("AllowFrontend", policy =>
@@ -67,6 +80,19 @@ try
         db.Database.Migrate();
         Log.Information("Database migration applied successfully");
     }
+
+    using (var scope = app.Services.CreateScope())
+    {
+        var minio = scope.ServiceProvider.GetRequiredService<IMinioClient>();
+        var bucket = builder.Configuration["Minio:BucketName"];
+
+        bool exists = await minio.BucketExistsAsync(new BucketExistsArgs().WithBucket(bucket));
+        if (!exists)
+        {
+            await minio.MakeBucketAsync(new MakeBucketArgs().WithBucket(bucket));
+        }
+    }
+
 
     app.Run();
 }

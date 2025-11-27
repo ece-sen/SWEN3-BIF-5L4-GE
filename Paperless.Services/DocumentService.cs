@@ -1,11 +1,14 @@
 ﻿using AutoMapper;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Minio;
+using Minio.DataModel.Args;
 using Paperless.DAL;
 using Paperless.DAL.Exceptions;
 using Paperless.DTOs;
 using Paperless.Models;
-using Paperless.Services.RabbitMq;
 using Paperless.Services.Exceptions;
+using Paperless.Services.RabbitMq;
 
 namespace Paperless.Services;
 
@@ -15,13 +18,19 @@ public class DocumentService : IDocumentService
     private readonly IMapper _mapper;
     private readonly IRabbitMqProducer _queue;
     private readonly ILogger<DocumentService> _logger;
+    private readonly IMinioClient _minio;
+    private readonly IConfiguration _config;
 
-    public DocumentService(IDocumentRepository repository, IMapper mapper, IRabbitMqProducer queue, ILogger<DocumentService> logger)
+
+    public DocumentService(IDocumentRepository repository, IMapper mapper, IRabbitMqProducer queue, ILogger<DocumentService> logger, IMinioClient minio, IConfiguration config)
     {
         _repository = repository;
         _mapper = mapper;
         _queue = queue;
         _logger = logger;
+        _minio = minio;
+        _config = config;
+
     }
 
     public async Task<List<DocumentDto>> GetAllDocumentsAsync()
@@ -77,7 +86,7 @@ public class DocumentService : IDocumentService
         }
     }
 
-    public async Task<DocumentDto> CreateDocumentAsync(DocumentDto documentDto)
+    public async Task<DocumentDto> CreateDocumentAsync(DocumentDto documentDto, Stream pdfStream, string fileName)
     {
         var document = _mapper.Map<Document>(documentDto);
         var createdDocument = await _repository.AddDocumentAsync(document);
@@ -93,6 +102,22 @@ public class DocumentService : IDocumentService
 
             _logger.LogInformation("Service: Document '{Title}' created successfully with ID={Id}",
                                    createdDocument.Title, createdDocument.Id);
+
+            var bucket = _config["Minio:BucketName"];
+            var objectName = $"{createdDocument.Id}.pdf";
+
+            pdfStream.Position = 0;
+
+            await _minio.PutObjectAsync(
+                new PutObjectArgs()
+                    .WithBucket(bucket)
+                    .WithObject(objectName)
+                    .WithStreamData(pdfStream)
+                    .WithObjectSize(pdfStream.Length)
+                    .WithContentType("application/pdf")
+            );
+
+            _logger.LogInformation("Service: PDF uploaded to MinIO as {Object}", objectName);
 
             await _queue.SendMessageAsync(createdDocument.Id.ToString());
 

@@ -78,34 +78,7 @@ namespace Paperless.REST.Controllers
             }
         }
 
-        [HttpPost]
-        public async Task<ActionResult<DocumentDto>> Create([FromBody] DocumentDto newDoc)
-        {
-            _logger.LogInformation("POST /api/DMS - Creating document with title '{Title}'", newDoc.Title);
-            try
-            {
-                var created = await _documentService.CreateDocumentAsync(newDoc);
-
-                // 201 Created + Rückgabe-Link
-                _logger.LogInformation("Document created successfully with ID {Id}", created.Id);
-                return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
-            }
-            catch (DocumentValidationException ex)
-            {
-                _logger.LogWarning(ex, "Validation failed for new document: {Message}", ex.Message);
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (DatabaseOperationException ex)
-            {
-                _logger.LogError(ex, "Database operation failed while creating document '{Title}'", newDoc.Title);
-                return StatusCode(500, new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error while creating document '{Title}'", newDoc.Title);
-                return StatusCode(500, new { message = "Unexpected error: " + ex.Message });
-            }
-        }
+        
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
@@ -175,41 +148,44 @@ namespace Paperless.REST.Controllers
         }
 
         [HttpPost("upload")]
+        [Consumes("multipart/form-data")]
         public async Task<IActionResult> Upload(
             [FromForm] string title,
             [FromForm] string category,
             [FromForm] IFormFile file)
         {
-            if (file == null || file.Length == 0)
-                return BadRequest("No file uploaded");
-
-            var uploadPath = _config["UploadSettings:UploadPath"];
-
-            if (string.IsNullOrWhiteSpace(uploadPath))
-                return StatusCode(500, "Upload path not configured.");
-
-            Directory.CreateDirectory(uploadPath);
-
-            var extension = Path.GetExtension(file.FileName);
-            var guid = Guid.NewGuid().ToString();
-            var saveName = $"{title}_{guid}{extension}";
-
-            var fullPath = Path.Combine(uploadPath, saveName);
-
-            using (var stream = System.IO.File.Create(fullPath))
-            {
-                await file.CopyToAsync(stream);
-            }
-
             var dto = new DocumentDto
             {
-                Title = saveName,
+                Title = title,
                 Category = category
             };
 
-            var created = await _documentService.CreateDocumentAsync(dto);
+            using var stream = file.OpenReadStream();
 
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+            try
+            {
+                var createdDocument = await _documentService.CreateDocumentAsync(
+                    dto,
+                    stream,
+                    file.FileName
+                );
+
+                return CreatedAtAction(nameof(GetById),
+                    new { id = createdDocument.Id },
+                    createdDocument);
+            }
+            catch (DocumentValidationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (DocumentServiceException ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Unexpected error: " + ex.Message });
+            }
         }
     }
 }
