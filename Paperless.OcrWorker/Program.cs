@@ -14,7 +14,7 @@ var minio = new MinioClient()
     .WithCredentials("minioadmin", "minioadmin")
     .Build();
 
-string bucket = "paperless";
+string bucket = "documents";
 
 // OCR service
 var ocr = new OcrService();

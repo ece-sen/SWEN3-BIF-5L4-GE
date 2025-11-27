@@ -13,7 +13,7 @@ namespace Paperless.OcrWorker.Services
             using var rasterizer = new GhostscriptRasterizer();
             rasterizer.Open(pdfPath);
 
-            using var engine = new TesseractEngine("./tessdata", "eng", EngineMode.Default);
+            using var engine = new TesseractEngine("/usr/share/tesseract-ocr/4.00/tessdata", "eng", EngineMode.Default);
 
             for (int page = 1; page <= rasterizer.PageCount; page++)
             {
