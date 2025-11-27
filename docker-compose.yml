@@ -1,19 +1,21 @@
 services:
+
   paperless.frontend:
-      image: paperlessfrontend
-      build:
-        context: ./frontend
-        dockerfile: Dockerfile
-      container_name: paperless_frontend
-      ports:
-        - "8080:80"
-      environment:
-        - REACT_APP_API_BASE_URL=http://paperless.rest:8080
-      depends_on:
-        - paperless.rest
-      networks:
-        - paperless_network
-      restart: on-failure
+    image: paperlessfrontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: paperless_frontend
+    ports:
+      - "8080:80"
+    environment:
+      - REACT_APP_API_BASE_URL=http://paperless.rest:8080
+    depends_on:
+      paperless.rest:
+        condition: service_started
+    networks:
+      - paperless_network
+    restart: on-failure
 
   postgres:
     image: postgres:16
@@ -28,7 +30,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - paperless_network
-    healthcheck:                                    
+    healthcheck:
       test: ["CMD-SHELL", "pg_isready -U dms -d dmsdb"]
       interval: 5s
       timeout: 5s
@@ -47,35 +49,45 @@ services:
       - ConnectionStrings__DMSDb=Host=postgres;Port=5432;Database=dmsdb;Username=dms;Password=dms123
     depends_on:
       rabbitmq:
-        condition: service_started
+        condition: service_healthy
       postgres:
-        condition: service_healthy 
+        condition: service_healthy
       minio:
         condition: service_started
     networks:
       - paperless_network
-    restart: on-failure 
-    
+    restart: on-failure
+
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
     ports:
-      - "5672:5672"  
-      - "9093:15672" 
+      - "5672:5672"
+      - "9093:15672"
     networks:
       - paperless_network
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   paperless_ocrworker:
     build:
       context: ./Paperless.OcrWorker
       dockerfile: Dockerfile
     container_name: paperless_ocrworker
-    ports:
-      - "8082:8082"
     environment:
       - RABBITMQ_HOST=rabbitmq
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - MINIO_BUCKET=paperless
     depends_on:
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_started
     networks:
       - paperless_network
 
@@ -83,14 +95,14 @@ services:
     image: minio/minio
     container_name: minio
     ports:
-        - "9000:9000"
-        - "9090:9090"
+      - "9000:9000"
+      - "9090:9090"
     environment:
-        MINIO_ROOT_USER: minioadmin
-        MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
     command: server /data --console-address ":9090"
     networks:
-        - paperless_network
+      - paperless_network
 
 volumes:
   postgres_data:
