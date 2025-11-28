@@ -2,6 +2,7 @@ using FakeItEasy;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Paperless.DAL;
+using Paperless.DAL.Exceptions;
 using Paperless.Models;
 
 namespace Paperless.Unittests.Paperless.DAL
@@ -63,5 +64,37 @@ namespace Paperless.Unittests.Paperless.DAL
 
             A.CallTo(() => _fakeContext.Documents.FindAsync(10)).MustHaveHappenedOnceExactly();
         }
+
+        [Test]
+        public async Task UpdateDocumentAsync_WhenSuccessful_ReturnsUpdated()
+        {
+            var existing = new Document { Id = 1, Title = "Old", Category = "C1" };
+            var updated = new Document { Id = 1, Title = "New", Category = "C2" };
+
+            A.CallTo(() => _fakeSet.FindAsync(1))
+                .Returns(new ValueTask<Document?>(existing));
+
+            A.CallTo(() => _fakeContext.SaveChangesAsync(A<CancellationToken>._))
+                .Returns(1);
+
+            var result = await _repository.UpdateDocumentAsync(updated);
+
+            Assert.That(result.Title, Is.EqualTo("New"));
+            Assert.That(result.Category, Is.EqualTo("C2"));
+        }
+
+
+        [Test]
+        public void UpdateDocumentAsync_WhenNotFound_ThrowsDocumentNotFoundException()
+        {
+            A.CallTo(() => _fakeSet.FindAsync(1))
+                .Returns(new ValueTask<Document?>(result:null));
+
+            var updated = new Document { Id = 1 };
+
+            Assert.ThrowsAsync<DocumentNotFoundException>(async () =>
+                await _repository.UpdateDocumentAsync(updated));
+        }
+
     }
 }

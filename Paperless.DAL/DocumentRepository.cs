@@ -123,11 +123,16 @@ namespace Paperless.DAL
                 _logger.LogInformation("Repository: Document {Id} updated successfully", document.Id);
                 return existing;
             }
+            catch (DocumentNotFoundException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Repository: Error updating document {Id}", document.Id);
                 throw new DatabaseOperationException($"Error updating document {document.Id}", ex);
             }
+
         }
 
     }
