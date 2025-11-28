@@ -1,51 +1,48 @@
-﻿using System.Diagnostics;
+﻿using System.Text;
 
 namespace Paperless.OcrWorker.Services
 {
     public class OcrService
     {
+        private readonly IProcessRunner _process;
+        private readonly IFileSystem _fs;
+
+        public OcrService(IProcessRunner process, IFileSystem fs)
+        {
+            _process = process;
+            _fs = fs;
+        }
+
         public string ExtractTextFromPdf(string pdfPath)
         {
-            // 1) Convert PDF → PNG pages using Ghostscript CLI
-            string outputPattern = Path.Combine(Path.GetTempPath(), "page-%03d.png");
+            string tempDir = Path.GetTempPath();
+            string outputPattern = Path.Combine(tempDir, "page-%03d.png");
 
-            var gs = Process.Start(new ProcessStartInfo
-            {
-                FileName = "gs",
-                Arguments = $"-dNOPAUSE -dBATCH -sDEVICE=png16m -r300 -sOutputFile={outputPattern} {pdfPath}",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            });
-            gs?.WaitForExit();
+            // Step 1: PDF → PNG
+            _process.Run("gs",
+                $"-dNOPAUSE -dBATCH -sDEVICE=png16m -r300 -sOutputFile={outputPattern} {pdfPath}");
 
-            // 2) OCR each PNG with Tesseract
-            var result = new System.Text.StringBuilder();
+            // Step 2: Read generated pages
+            var pages = _fs.GetFiles(tempDir, "page-*.png").OrderBy(x => x).ToList();
 
-            var pages = Directory.GetFiles(Path.GetTempPath(), "page-*.png")
-                .OrderBy(f => f);
+            var result = new StringBuilder();
 
             foreach (var page in pages)
             {
-                var outputBase = Path.Combine(Path.GetTempPath(), "ocr-temp");
+                string outputBase = Path.Combine(tempDir, "ocr-temp");
 
-                var tess = Process.Start(new ProcessStartInfo
+                // Run Tesseract
+                _process.Run("tesseract", $"{page} {outputBase} -l eng");
+
+                string txtFile = outputBase + ".txt";
+
+                if (_fs.Exists(txtFile))
                 {
-                    FileName = "tesseract",
-                    Arguments = $"{page} {outputBase} -l eng",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                });
-
-                tess?.WaitForExit();
-
-                var txtFile = outputBase + ".txt";
-                if (File.Exists(txtFile))
-                {
-                    result.AppendLine(File.ReadAllText(txtFile));
-                    File.Delete(txtFile);
+                    result.AppendLine(_fs.ReadAllText(txtFile));
+                    _fs.Delete(txtFile);
                 }
 
-                File.Delete(page);
+                _fs.Delete(page);
             }
 
             return result.ToString();
