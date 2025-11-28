@@ -1,15 +1,18 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using FakeItEasy;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Paperless.DAL;
+using Paperless.DAL.Exceptions;
+using Paperless.DTOs;
 using Paperless.Models;
 using Paperless.REST.Controllers;
 using Paperless.Services;
-using Paperless.DTOs;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Configuration;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Paperless.Services.Exceptions;
 
 namespace Paperless.Unittests.Paperless.REST.Controllers
 {
@@ -86,23 +89,6 @@ namespace Paperless.Unittests.Paperless.REST.Controllers
             Assert.That(((DocumentDto)okResult!.Value!).Id, Is.EqualTo(10));
         }
 
-        [Test]
-        public async Task Create_WhenValid_ReturnsCreated()
-        {
-            // Arrange
-            var newDto = new DocumentDto { Id = 1, Title = "NewDoc", Category = "Cat" };
-            A.CallTo(() => _fakeService.CreateDocumentAsync(A<DocumentDto>.Ignored))
-                .Returns(Task.FromResult(newDto));
-
-            // Act
-            var result = await _controller.Create(newDto);
-
-            // Assert
-            Assert.That(result.Result, Is.TypeOf<CreatedAtActionResult>());
-            var createdAt = result.Result as CreatedAtActionResult;
-            var createdDoc = createdAt!.Value as DocumentDto;
-            Assert.That(createdDoc!.Title, Is.EqualTo("NewDoc"));
-        }
 
         [Test]
         public async Task Delete_WhenDocumentExists_ReturnsNoContent()
@@ -132,5 +118,92 @@ namespace Paperless.Unittests.Paperless.REST.Controllers
             // Assert
             Assert.That(result, Is.TypeOf<NotFoundObjectResult>());
         }
+
+        [Test]
+        public async Task Update_WhenSuccessful_ReturnsOk()
+        {
+            // Arrange
+            var dto = new DocumentDto
+            {
+                Id = 1,
+                Title = "UpdatedTitle",
+                Category = "UpdatedCategory"
+            };
+
+            // The service should return the updated DTO
+            A.CallTo(() => _fakeService.UpdateDocumentAsync(1, dto))
+                .Returns(dto);
+
+            // Act
+            var result = await _controller.Update(1, dto);
+
+            // Assert
+            var okResult = result as OkObjectResult;
+            Assert.That(okResult, Is.Not.Null, "Expected OK result");
+
+            var returnedDto = okResult.Value as DocumentDto;
+            Assert.That(returnedDto, Is.Not.Null);
+            Assert.That(returnedDto!.Id, Is.EqualTo(1));
+            Assert.That(returnedDto.Title, Is.EqualTo("UpdatedTitle"));
+        }
+
+
+        [Test]
+        public async Task Update_WhenDocNotFound_Returns404()
+        {
+            var dto = new DocumentDto();
+
+            A.CallTo(() => _fakeService.UpdateDocumentAsync(1, dto))
+                .Throws(new DocumentNotFoundException(404));
+
+            var result = await _controller.Update(1, dto);
+
+            Assert.That(result, Is.InstanceOf<NotFoundObjectResult>());
+        }
+
+        [Test]
+        public async Task Upload_ReturnsCreated()
+        {
+            // Arrange
+            var stream = new MemoryStream(new byte[] { 1, 2, 3 });
+
+            var fakeFile = A.Fake<IFormFile>();
+            A.CallTo(() => fakeFile.OpenReadStream()).Returns(stream);
+            A.CallTo(() => fakeFile.FileName).Returns("test.pdf");
+
+            var created = new DocumentDto { Id = 99, Title = "Uploaded" };
+
+            A.CallTo(() => _fakeService.CreateDocumentAsync(
+                    A<DocumentDto>.Ignored,
+                    A<Stream>.Ignored,
+                    "test.pdf"))
+                .Returns(created);
+
+            // Act
+            var result = await _controller.Upload("TitleX", "CatX", fakeFile);
+
+            // Assert
+            Assert.That(result, Is.InstanceOf<CreatedAtActionResult>());
+        }
+
+        [Test]
+        public async Task Upload_WhenValidationFails_Returns400()
+        {
+            var stream = new MemoryStream(new byte[] { 1, 2 });
+            var fakeFile = A.Fake<IFormFile>();
+            A.CallTo(() => fakeFile.OpenReadStream()).Returns(stream);
+            A.CallTo(() => fakeFile.FileName).Returns("x.pdf");
+
+            A.CallTo(() => _fakeService.CreateDocumentAsync(
+                    A<DocumentDto>.Ignored,
+                    A<Stream>.Ignored,
+                    "x.pdf"))
+                .Throws(new DocumentValidationException("bad"));
+
+            var result = await _controller.Upload("a", "b", fakeFile);
+
+            Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+        }
+
     }
 }
