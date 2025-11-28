@@ -18,11 +18,9 @@ namespace Paperless.OcrWorker.Services
             string tempDir = Path.GetTempPath();
             string outputPattern = Path.Combine(tempDir, "page-%03d.png");
 
-            // Step 1: PDF → PNG
             _process.Run("gs",
                 $"-dNOPAUSE -dBATCH -sDEVICE=png16m -r300 -sOutputFile={outputPattern} {pdfPath}");
 
-            // Step 2: Read generated pages
             var pages = _fs.GetFiles(tempDir, "page-*.png").OrderBy(x => x).ToList();
 
             var result = new StringBuilder();
@@ -31,7 +29,6 @@ namespace Paperless.OcrWorker.Services
             {
                 string outputBase = Path.Combine(tempDir, "ocr-temp");
 
-                // Run Tesseract
                 _process.Run("tesseract", $"{page} {outputBase} -l eng");
 
                 string txtFile = outputBase + ".txt";
