@@ -1,36 +1,57 @@
-﻿using NUnit.Framework;
+﻿using FakeItEasy;
+using NUnit.Framework;
 using Paperless.OcrWorker.Services;
 
-namespace Paperless.Unittests.Paperless.OcrWorker.Services
+[TestFixture]
+public class OcrServiceTests
 {
-    public class OcrServiceTests
+    private IProcessRunner _fakeProc = null!;
+    private IFileSystem _fakeFs = null!;
+    private OcrService _service = null!;
+
+    [SetUp]
+    public void Setup()
     {
-        [Test]
-        public void ExtractTextFromPdf_ShouldContainHelloWorld()
+        _fakeProc = A.Fake<IProcessRunner>();
+        _fakeFs = A.Fake<IFileSystem>();
+        _service = new OcrService(_fakeProc, _fakeFs);
+    }
+
+    [Test]
+    public void ExtractTextFromPdf_ShouldCombineOcrResults()
+    {
+        // Arrange
+        string tempDir = Path.GetTempPath();
+
+        A.CallTo(() =>
+            _fakeFs.GetFiles(
+                A<string>.That.Matches(x => x.Contains(tempDir)),
+                "page-*.png"))
+        .Returns(new[]
         {
-            // Arrange
-            var service = new OcrService();
+            Path.Combine(tempDir, "page-001.png"),
+            Path.Combine(tempDir, "page-002.png")
+        });
 
-            var pdfPath = Path.Combine(
-                TestContext.CurrentContext.TestDirectory,
-                "Paperless.OcrWorker",
-                "Services",
-                "TestFiles",
-                "test.pdf"
-            );
+        A.CallTo(() => _fakeFs.Exists(A<string>._))
+            .Returns(true);
 
-            // Act
-            var text = service.ExtractTextFromPdf(pdfPath);
+        A.CallTo(() => _fakeFs.ReadAllText(A<string>._))
+            .Returns("Hello OCR");
 
-            // Assert
-            Assert.IsNotNull(text, "OCR result should not be null");
-            Assert.IsTrue(text.Trim().Length > 0, "OCR result should not be empty");
+        A.CallTo(() => _fakeFs.Delete(A<string>._))
+            .DoesNothing();
 
+        // Act
+        var result = _service.ExtractTextFromPdf("/fake.pdf");
 
-            Assert.IsTrue(
-                text.Contains("Hello World", StringComparison.OrdinalIgnoreCase),
-                $"OCR output does not contain expected text. Output was:\n{text}"
-            );
-        }
+        // Assert
+        Assert.IsTrue(result.Contains("Hello OCR"));
+
+        A.CallTo(() => _fakeProc.Run("gs", A<string>._))
+            .MustHaveHappenedOnceExactly();
+
+        A.CallTo(() => _fakeProc.Run("tesseract", A<string>._))
+            .MustHaveHappened(2, Times.Exactly);
     }
 }

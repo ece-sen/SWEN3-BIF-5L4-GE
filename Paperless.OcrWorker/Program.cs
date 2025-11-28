@@ -16,7 +16,9 @@ var minio = new MinioClient()
 
 string bucket = "documents";
 
-var ocr = new OcrService();
+var process = new ProcessRunner();
+var fs = new FileSystem();
+var ocr = new OcrService(process, fs);
 
 // RabbitMQ connection
 var factory = new ConnectionFactory
