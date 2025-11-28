@@ -1,6 +1,4 @@
-﻿using Ghostscript.NET.Rasterizer;
-using Tesseract;
-using System.Drawing;
+﻿using System.Diagnostics;
 
 namespace Paperless.OcrWorker.Services
 {
@@ -8,31 +6,49 @@ namespace Paperless.OcrWorker.Services
     {
         public string ExtractTextFromPdf(string pdfPath)
         {
+            // 1) Convert PDF → PNG pages using Ghostscript CLI
+            string outputPattern = Path.Combine(Path.GetTempPath(), "page-%03d.png");
+
+            var gs = Process.Start(new ProcessStartInfo
+            {
+                FileName = "gs",
+                Arguments = $"-dNOPAUSE -dBATCH -sDEVICE=png16m -r300 -sOutputFile={outputPattern} {pdfPath}",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            });
+            gs?.WaitForExit();
+
+            // 2) OCR each PNG with Tesseract
             var result = new System.Text.StringBuilder();
 
-            using var rasterizer = new GhostscriptRasterizer();
-            rasterizer.Open(pdfPath);
+            var pages = Directory.GetFiles(Path.GetTempPath(), "page-*.png")
+                .OrderBy(f => f);
 
-            using var engine = new TesseractEngine("/usr/share/tesseract-ocr/4.00/tessdata", "eng", EngineMode.Default);
-
-            for (int page = 1; page <= rasterizer.PageCount; page++)
+            foreach (var page in pages)
             {
-                using Image img = rasterizer.GetPage(300, page);
+                var outputBase = Path.Combine(Path.GetTempPath(), "ocr-temp");
 
-                using var pix = Pix.LoadFromMemory(ImageToBytes(img));
-                using var pageResult = engine.Process(pix);
+                var tess = Process.Start(new ProcessStartInfo
+                {
+                    FileName = "tesseract",
+                    Arguments = $"{page} {outputBase} -l eng",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                });
 
-                result.AppendLine(pageResult.GetText());
+                tess?.WaitForExit();
+
+                var txtFile = outputBase + ".txt";
+                if (File.Exists(txtFile))
+                {
+                    result.AppendLine(File.ReadAllText(txtFile));
+                    File.Delete(txtFile);
+                }
+
+                File.Delete(page);
             }
 
             return result.ToString();
-        }
-
-        private byte[] ImageToBytes(Image image)
-        {
-            using var ms = new MemoryStream();
-            image.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
-            return ms.ToArray();
         }
     }
 }
