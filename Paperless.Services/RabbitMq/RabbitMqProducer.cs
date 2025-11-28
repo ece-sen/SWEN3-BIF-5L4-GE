@@ -27,8 +27,10 @@ public class RabbitMqProducer : IRabbitMqProducer
         await using var connection = await factory.CreateConnectionAsync();
         await using var channel = await connection.CreateChannelAsync();
 
+        var queue = _settings.QueueName;
+
         await channel.QueueDeclareAsync(
-            queue: "OCR_QUEUE",
+            queue: queue,
             durable: false,
             exclusive: false,
             autoDelete: false,
@@ -39,7 +41,7 @@ public class RabbitMqProducer : IRabbitMqProducer
 
         await channel.BasicPublishAsync(
             exchange: "",
-            routingKey: "OCR_QUEUE",
+            routingKey: queue,
             mandatory: false,
             body: bytes
         );

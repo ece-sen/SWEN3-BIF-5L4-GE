@@ -21,8 +21,9 @@ var factory = new ConnectionFactory
     UserName = "guest",
     Password = "guest"
 };
+var queueName = Environment.GetEnvironmentVariable("RABBITMQ_QUEUE") ?? "ocr_queue";
 
-var consumer = new RabbitMqConsumer(factory, "OCR_QUEUE");
+var consumer = new RabbitMqConsumer(factory, queueName);
 
 var worker = new OcrWorker(storage, ocrService, "documents");
 
@@ -30,6 +31,7 @@ Console.WriteLine("OCR Worker started…");
 
 consumer.StartConsuming(async documentId =>
 {
+    Console.WriteLine($"[WORKER] Received {documentId}, WAITING...");
     await worker.ProcessDocumentAsync(documentId);
 });
 
