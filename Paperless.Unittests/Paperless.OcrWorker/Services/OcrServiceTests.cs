@@ -2,56 +2,60 @@
 using NUnit.Framework;
 using Paperless.OcrWorker.Services;
 
-[TestFixture]
-public class OcrServiceTests
+namespace Paperless.Unittests.Paperless.OcrWorker.Services
 {
-    private IProcessRunner _fakeProc = null!;
-    private IFileSystem _fakeFs = null!;
-    private OcrService _service = null!;
-
-    [SetUp]
-    public void Setup()
+    [TestFixture]
+    public class OcrServiceTests
     {
-        _fakeProc = A.Fake<IProcessRunner>();
-        _fakeFs = A.Fake<IFileSystem>();
-        _service = new OcrService(_fakeProc, _fakeFs);
-    }
+        private IProcessRunner _fakeProc = null!;
+        private IFileSystem _fakeFs = null!;
+        private OcrService _service = null!;
 
-    [Test]
-    public void ExtractTextFromPdf_ShouldCombineOcrResults()
-    {
-        // Arrange
-        string tempDir = Path.GetTempPath();
-
-        A.CallTo(() =>
-            _fakeFs.GetFiles(
-                A<string>.That.Matches(x => x.Contains(tempDir)),
-                "page-*.png"))
-        .Returns(new[]
+        [SetUp]
+        public void Setup()
         {
-            Path.Combine(tempDir, "page-001.png"),
-            Path.Combine(tempDir, "page-002.png")
-        });
+            _fakeProc = A.Fake<IProcessRunner>();
+            _fakeFs = A.Fake<IFileSystem>();
+            _service = new OcrService(_fakeProc, _fakeFs);
+        }
 
-        A.CallTo(() => _fakeFs.Exists(A<string>._))
-            .Returns(true);
+        [Test]
+        public void ExtractTextFromPdf_ShouldCombineOcrResults()
+        {
+            // Arrange
+            string tempDir = Path.GetTempPath();
 
-        A.CallTo(() => _fakeFs.ReadAllText(A<string>._))
-            .Returns("Hello OCR");
+            A.CallTo(() =>
+                    _fakeFs.GetFiles(
+                        A<string>.That.Matches(x => x.Contains(tempDir)),
+                        "page-*.png"))
+                .Returns(new[]
+                {
+                    Path.Combine(tempDir, "page-001.png"),
+                    Path.Combine(tempDir, "page-002.png")
+                });
 
-        A.CallTo(() => _fakeFs.Delete(A<string>._))
-            .DoesNothing();
+            A.CallTo(() => _fakeFs.Exists(A<string>._))
+                .Returns(true);
 
-        // Act
-        var result = _service.ExtractTextFromPdf("/fake.pdf");
+            A.CallTo(() => _fakeFs.ReadAllText(A<string>._))
+                .Returns("Hello OCR");
 
-        // Assert
-        Assert.IsTrue(result.Contains("Hello OCR"));
+            A.CallTo(() => _fakeFs.Delete(A<string>._))
+                .DoesNothing();
 
-        A.CallTo(() => _fakeProc.Run("gs", A<string>._))
-            .MustHaveHappenedOnceExactly();
+            // Act
+            var result = _service.ExtractTextFromPdf("/fake.pdf");
 
-        A.CallTo(() => _fakeProc.Run("tesseract", A<string>._))
-            .MustHaveHappened(2, Times.Exactly);
+            // Assert
+            Assert.IsTrue(result.Contains("Hello OCR"));
+
+            A.CallTo(() => _fakeProc.Run("gs", A<string>._))
+                .MustHaveHappenedOnceExactly();
+
+            A.CallTo(() => _fakeProc.Run("tesseract", A<string>._))
+                .MustHaveHappened(2, Times.Exactly);
+        }
     }
+
 }
