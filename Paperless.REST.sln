@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Paperless.Services", "Paper
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Paperless.OcrWorker", "Paperless.OcrWorker\Paperless.OcrWorker.csproj", "{E4C18F9D-B267-45E7-99B7-4E5CC8ACF271}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Paperless.GenAIWorker", "..\Paperless.GenAIWorker\Paperless.GenAIWorker.csproj", "{4281DF43-FC2D-4D88-A16F-AA544049AB38}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -121,6 +123,18 @@ Global
 		{E4C18F9D-B267-45E7-99B7-4E5CC8ACF271}.Release|x64.Build.0 = Release|Any CPU
 		{E4C18F9D-B267-45E7-99B7-4E5CC8ACF271}.Release|x86.ActiveCfg = Release|Any CPU
 		{E4C18F9D-B267-45E7-99B7-4E5CC8ACF271}.Release|x86.Build.0 = Release|Any CPU
+		{4281DF43-FC2D-4D88-A16F-AA544049AB38}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4281DF43-FC2D-4D88-A16F-AA544049AB38}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4281DF43-FC2D-4D88-A16F-AA544049AB38}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{4281DF43-FC2D-4D88-A16F-AA544049AB38}.Debug|x64.Build.0 = Debug|Any CPU
+		{4281DF43-FC2D-4D88-A16F-AA544049AB38}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{4281DF43-FC2D-4D88-A16F-AA544049AB38}.Debug|x86.Build.0 = Debug|Any CPU
+		{4281DF43-FC2D-4D88-A16F-AA544049AB38}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4281DF43-FC2D-4D88-A16F-AA544049AB38}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4281DF43-FC2D-4D88-A16F-AA544049AB38}.Release|x64.ActiveCfg = Release|Any CPU
+		{4281DF43-FC2D-4D88-A16F-AA544049AB38}.Release|x64.Build.0 = Release|Any CPU
+		{4281DF43-FC2D-4D88-A16F-AA544049AB38}.Release|x86.ActiveCfg = Release|Any CPU
+		{4281DF43-FC2D-4D88-A16F-AA544049AB38}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
