@@ -149,27 +149,21 @@ namespace Paperless.REST.Controllers
 
         [HttpPost("upload")]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> Upload(
-            [FromForm] string title,
-            [FromForm] string category,
-            [FromForm] IFormFile file)
+        public async Task<IActionResult> Upload([FromForm] DocumentDto dto)
         {
-            var dto = new DocumentDto
-            {
-                Title = title,
-                Category = category
-            };
+            if (dto.File == null)
+                return BadRequest(new { message = "File is required" });
 
-            using var stream = file.OpenReadStream();
+            using var stream = dto.File.OpenReadStream();
 
             try
             {
                 var createdDocument = await _documentService.CreateDocumentAsync(
                     dto,
                     stream,
-                    file.FileName
-                );
-
+                    dto.File.FileName
+                ); 
+                
                 return CreatedAtAction(nameof(GetById),
                     new { id = createdDocument.Id },
                     createdDocument);
