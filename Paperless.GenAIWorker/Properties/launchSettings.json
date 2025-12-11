@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Paperless.GenAIWorker": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}

@@ -113,8 +113,8 @@ services:
 
   paperless.genaiworker:
     build:
-      context: ./Paperless.GenAIWorker
-      dockerfile: Dockerfile
+        context: .                     
+        dockerfile: Paperless.GenAIWorker/Dockerfile
     container_name: paperless_genaiworker
     environment:
       - RABBITMQ_HOST=rabbitmq
