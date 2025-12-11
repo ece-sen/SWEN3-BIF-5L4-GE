@@ -1,8 +1,11 @@
-﻿using System;
+﻿using RabbitMQ.Client;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
+using Paperless.Models;
 
 namespace Paperless.OcrWorker.Services
 {
@@ -43,6 +46,8 @@ namespace Paperless.OcrWorker.Services
                 await _storage.UploadTextAsync(_bucket, $"{id}.txt", text);
 
                 Console.WriteLine($"[OCRWorker] Upload complete.");
+               
+                await PublishToGenAiQueueAsync(id, text);
 
             }
             finally
@@ -51,6 +56,50 @@ namespace Paperless.OcrWorker.Services
                 if (File.Exists(tempPdf)) File.Delete(tempPdf);
                 Console.WriteLine($"[OCRWorker] Deleted temp file: {tempPdf} and finished OCR job for Document ID={id}");
 
+            }
+        }
+
+        private async Task PublishToGenAiQueueAsync(string documentId, string text)
+        {
+            try
+            {
+                string rabbitHost = Environment.GetEnvironmentVariable("RABBITMQ_HOST") ?? "rabbitmq";
+                string queueName = Environment.GetEnvironmentVariable("GENAI_QUEUE") ?? "genai_queue";
+
+                var factory = new ConnectionFactory
+                {
+                    HostName = rabbitHost,
+                    UserName = "guest",
+                    Password = "guest"
+                };
+
+                await using var connection = await factory.CreateConnectionAsync();
+                await using var channel = await connection.CreateChannelAsync();
+
+                await channel.QueueDeclareAsync(queueName, durable: false, exclusive: false, autoDelete: false,
+                    arguments: null);
+
+                var msg = new OcrCompletedMessage
+                {
+                    DocumentId = documentId,
+                    Text = text
+                };
+
+                var json = JsonSerializer.Serialize(msg);
+                var body = Encoding.UTF8.GetBytes(json);
+
+                await channel.BasicPublishAsync(
+                    exchange: "",
+                    routingKey: queueName,
+                    mandatory: false,
+                    body: body);
+
+                Console.WriteLine(
+                    $"[OCRWorker] Published OCR-completed message for document {documentId} to GenAI queue '{queueName}'.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[OCRWorker] ERROR while publishing to GenAI queue: {ex}");
             }
         }
     }

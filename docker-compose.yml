@@ -79,8 +79,8 @@ services:
 
   paperless_ocrworker:
     build:
-      context: ./Paperless.OcrWorker
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Paperless.OcrWorker/Dockerfile
     container_name: paperless_ocrworker
     environment:
       - RABBITMQ_HOST=rabbitmq

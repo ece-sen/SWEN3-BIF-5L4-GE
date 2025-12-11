@@ -1,4 +1,4 @@
-﻿namespace Paperless.GenAIWorker.Models
+﻿namespace Paperless.Models
 {
     public class OcrCompletedMessage
     {

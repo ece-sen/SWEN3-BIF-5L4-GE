@@ -6,7 +6,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-    <DockerfileContext>.</DockerfileContext>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,6 +18,10 @@
 
   <ItemGroup>
     <Folder Include="tessdata\script\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Paperless.Models\Paperless.Models.csproj" />
   </ItemGroup>
 
   <ItemGroup>

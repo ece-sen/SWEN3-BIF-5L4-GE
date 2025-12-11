@@ -4,17 +4,17 @@
 FROM mcr.microsoft.com/dotnet/runtime:8.0 AS base
 USER $APP_UID
 WORKDIR /app
-EXPOSE 8082
 
 
 # This stage is used to build the service project
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["Paperless.OcrWorker.csproj", "."]
-RUN dotnet restore "./Paperless.OcrWorker.csproj"
+COPY ["Paperless.OcrWorker/Paperless.OcrWorker.csproj", "Paperless.OcrWorker/"]
+COPY ["Paperless.Models/Paperless.Models.csproj", "Paperless.Models/"]
+RUN dotnet restore "./Paperless.OcrWorker/Paperless.OcrWorker.csproj"
 COPY . .
-WORKDIR "/src/."
+WORKDIR "/src/Paperless.OcrWorker"
 RUN dotnet build "./Paperless.OcrWorker.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
@@ -36,7 +36,6 @@ RUN apt-get update && apt-get install -y \
 
 # Switch back to safe user
 USER $APP_UID
-
 WORKDIR /app
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "Paperless.OcrWorker.dll"]
