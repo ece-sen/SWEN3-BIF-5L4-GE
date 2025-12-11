@@ -223,4 +223,36 @@ public class DocumentService : IDocumentService
         }
     }
 
+    public async Task<bool> UpdateSummaryAsync(int id, string summary)
+    {
+        _logger.LogInformation("Service: Updating summary for document {Id}", id);
+        try
+        {
+            var existing = await _repository.GetDocumentByIdAsync(id);
+            if (existing == null)
+            {
+                _logger.LogWarning("Service: Document {Id} not found for summary update", id);
+                throw new DocumentNotFoundException(id);
+            }
+            existing.Summary = summary;
+            await _repository.UpdateDocumentAsync(existing);
+            _logger.LogInformation("Service: Summary for document {Id} updated successfully", id);
+            return true;
+        }
+        catch (DocumentNotFoundException)
+        {
+            throw; 
+        }
+        catch (DatabaseOperationException ex)
+        {
+            _logger.LogError(ex, "Database error while updating summary for document {Id}", id);
+            throw new DocumentServiceException("Error while updating document summary.", ex);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while updating summary for document {Id}", id);
+            throw new DocumentServiceException("Unexpected error while updating document summary.", ex);
+        }
+    }
+
 }

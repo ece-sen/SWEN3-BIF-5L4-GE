@@ -58,6 +58,7 @@ namespace Paperless.REST.Controllers
                     _logger.LogWarning("Document with ID {Id} not found", id);
                     return NotFound(new { message = $"Document with ID {id} not found." });
                 }
+
                 _logger.LogInformation("Document with ID {Id} returned successfully", id);
                 return Ok(doc);
             }
@@ -78,7 +79,7 @@ namespace Paperless.REST.Controllers
             }
         }
 
-        
+
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
@@ -162,8 +163,8 @@ namespace Paperless.REST.Controllers
                     dto,
                     stream,
                     dto.File.FileName
-                ); 
-                
+                );
+
                 return CreatedAtAction(nameof(GetById),
                     new { id = createdDocument.Id },
                     createdDocument);
@@ -180,6 +181,40 @@ namespace Paperless.REST.Controllers
             {
                 return StatusCode(500, new { message = "Unexpected error: " + ex.Message });
             }
+        }
+
+        [HttpPatch("{id}/summary")]
+        public async Task<IActionResult> UpdateSummary(int id, [FromBody] string summary)
+        {
+            _logger.LogInformation("PATCH /api/DMS/{Id}/summary called", id);
+            try
+            {
+                var updated = await _documentService.UpdateSummaryAsync(id, summary);
+                if (!updated)
+                {
+                    _logger.LogWarning("Update summary failed: Document {Id} not found", id);
+                    return NotFound(new { message = $"Document with ID {id} not found." });
+                }
+
+                _logger.LogInformation("Document {Id} summary updated successfully", id);
+                return NoContent();
+            }
+            catch (DocumentNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Document {Id} not found while updating summary", id);
+                return NotFound(new { message = ex.Message });
+            }
+            catch (DatabaseOperationException ex)
+            {
+                _logger.LogError(ex, "Database operation failed while updating summary for document {Id}", id);
+                return StatusCode(500, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error while updating summary for document {Id}", id);
+                return StatusCode(500, new { message = "Unexpected error: " + ex.Message });
+            }
+
         }
     }
 }
