@@ -8,5 +8,6 @@ public class DocumentDto
     public string Title { get; set; } = string.Empty;
     public string Category { get; set; } = string.Empty;
     public IFormFile? File { get; set; }
+    public string Summary { get; set; } = string.Empty;
 
 }
