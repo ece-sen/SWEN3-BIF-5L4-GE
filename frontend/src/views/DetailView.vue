@@ -11,9 +11,13 @@
     <div v-else-if="loading" class="loading">Loading document...</div>
 
     <!-- Document Section -->
-    <div v-else-if="document" class="details-card">
-      <p><strong>Title:</strong> {{ document.title }}</p>
-      <p><strong>Category:</strong> {{ document.category }}</p>
+    <div v-else-if="document">
+      <div class="details-card">
+        <h2>{{ document.title }}</h2>
+        <p><strong>Title:</strong> {{ document.title }}</p>
+        <p><strong>Category:</strong> {{ document.category }}</p>
+        <p><strong>Summary:</strong> {{ document.summary }}</p>
+      </div> 
     </div>
   </main>
 </template>
@@ -26,6 +30,7 @@ interface Document {
   id: number
   title: string
   category: string
+  summary: string
 }
 
 const route = useRoute()
