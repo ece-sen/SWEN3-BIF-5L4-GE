@@ -89,6 +89,7 @@ services:
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
       - MINIO_BUCKET=documents
+      - GENAI_QUEUE=genai_queue
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -109,6 +110,27 @@ services:
     command: server /data --console-address ":9090"
     networks:
       - paperless_network
+
+  paperless.genaiworker:
+    build:
+      context: ./Paperless.GenAIWorker
+      dockerfile: Dockerfile
+    container_name: paperless_genaiworker
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - GENAI_QUEUE=genai_queue
+      - REST_BASE_URL=http://paperless.rest:8080
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL}
+    depends_on:
+      rabbitmq:
+        condition: service_started
+      paperless.rest:
+        condition: service_started
+    networks:
+      - paperless_network
+    restart: on-failure
+
 
 volumes:
   postgres_data:
