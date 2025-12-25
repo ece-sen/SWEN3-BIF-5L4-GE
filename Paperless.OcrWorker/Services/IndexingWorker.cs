@@ -24,7 +24,7 @@ namespace Paperless.OcrWorker.Services
             if (string.IsNullOrWhiteSpace(documentId))
                 throw new ArgumentException("documentId must not be empty", nameof(documentId));
 
-            var tempTxt = Path.Combine(Path.GetTempPath(), $"{documentId},txt");
+            var tempTxt = Path.Combine(Path.GetTempPath(), $"{documentId}.txt");
 
             Console.WriteLine($"[INDEX] Starting indexing for documentId={documentId}");
 

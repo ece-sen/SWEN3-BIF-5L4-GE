@@ -1,28 +1,33 @@
-﻿using System.Diagnostics.Contracts;
-using Elastic.Clients.Elasticsearch;
+﻿using Elastic.Clients.Elasticsearch;
 using Elastic.Transport;
+using Paperless.OcrWorker.Services.Elasticsearch;
+using System.Diagnostics.Contracts;
 
 namespace Paperless.OcrWorker.Services
 {
     public class ElasticsearchIndexingService: IElasticsearchIndexingService
     {
-        private readonly ElasticsearchClient _client;
+        private readonly IElasticClientWrapper _wrapper;
+        private const string IndexName = "documents";
 
+        // production ctor
         public ElasticsearchIndexingService(string url = "http://elasticsearch:9200")
-        {
-            var settings = new ElasticsearchClientSettings(new Uri(url))
-                .DefaultIndex("documents");
+            : this(CreateWrapper(url))
+        { }
 
-            _client = new ElasticsearchClient(settings);
+        // testable ctor
+        public ElasticsearchIndexingService(IElasticClientWrapper wrapper)
+        {
+            _wrapper = wrapper;
         }
 
         public async Task<bool> TestConnectionAsync()
         {
             try
             {
-                var ping = await _client.PingAsync();
-                Console.WriteLine($"[ES] Ping success: {ping.IsSuccess()}");
-                return ping.IsSuccess();
+                var ok = await _wrapper.PingAsync();
+                Console.WriteLine($"[ES] Ping success: {ok}");
+                return ok;
             }
             catch (Exception ex)
             {
@@ -36,20 +41,24 @@ namespace Paperless.OcrWorker.Services
             if (string.IsNullOrWhiteSpace(documentId))
                 throw new ArgumentException("documentId must not be empty", nameof(documentId));
 
-            if (ocrText == null)
-                ocrText = string.Empty;
+            ocrText ??= string.Empty;
 
-            var doc = new
-            {
-                Id = documentId,
-                Content = ocrText
-            };
+            var doc = new { Id = documentId, Content = ocrText };
 
-            var result = await _client.IndexAsync(doc, i => i.Index("documents").Id(documentId), ct);
-            if (!result.IsSuccess())
-                throw new Exception($"[ES] Failed to Index {documentId}. Debug: {result.DebugInformation}");
+            var ok = await _wrapper.IndexAsync(IndexName, documentId, doc, ct);
+            if (!ok)
+                throw new Exception($"[ES] Failed to Index {documentId}.");
 
             Console.WriteLine($"[ES] Indexed OCR result for document id {documentId} successfully.");
+        }
+
+        private static IElasticClientWrapper CreateWrapper(string url)
+        {
+            var settings = new ElasticsearchClientSettings(new Uri(url))
+                .DefaultIndex(IndexName);
+
+            var client = new ElasticsearchClient(settings);
+            return new ElasticClientWrapper(client);
         }
     }
 }

@@ -171,19 +171,32 @@ namespace Paperless.Unittests.Paperless.REST.Controllers
             A.CallTo(() => fakeFile.OpenReadStream()).Returns(stream);
             A.CallTo(() => fakeFile.FileName).Returns("test.pdf");
 
+            var dto = new DocumentDto
+            {
+                Title = "TitleX",
+                Category = "CatX",
+                File = fakeFile
+            };
+
             var created = new DocumentDto { Id = 99, Title = "Uploaded" };
 
             A.CallTo(() => _fakeService.CreateDocumentAsync(
-                    A<DocumentDto>.Ignored,
+                    A<DocumentDto>.That.Matches(d => d.Title == "TitleX" && d.Category == "CatX"),
                     A<Stream>.Ignored,
                     "test.pdf"))
                 .Returns(created);
 
             // Act
-            var result = await _controller.Upload("TitleX", "CatX", fakeFile);
+            var result = await _controller.Upload(dto);
 
             // Assert
-            Assert.That(result, Is.InstanceOf<CreatedAtActionResult>());
+            var createdResult = result as CreatedAtActionResult;
+            Assert.That(createdResult, Is.Not.Null);
+            Assert.That(createdResult!.ActionName, Is.EqualTo(nameof(DMSController.GetById)));
+
+            var returnedDto = createdResult.Value as DocumentDto;
+            Assert.That(returnedDto, Is.Not.Null);
+            Assert.That(returnedDto!.Id, Is.EqualTo(99));
         }
 
         [Test]
@@ -194,13 +207,20 @@ namespace Paperless.Unittests.Paperless.REST.Controllers
             A.CallTo(() => fakeFile.OpenReadStream()).Returns(stream);
             A.CallTo(() => fakeFile.FileName).Returns("x.pdf");
 
+            var dto = new DocumentDto
+            {
+                Title = "a",
+                Category = "b",
+                File = fakeFile
+            };
+
             A.CallTo(() => _fakeService.CreateDocumentAsync(
                     A<DocumentDto>.Ignored,
                     A<Stream>.Ignored,
                     "x.pdf"))
                 .Throws(new DocumentValidationException("bad"));
 
-            var result = await _controller.Upload("a", "b", fakeFile);
+            var result = await _controller.Upload(dto);
 
             Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
         }
