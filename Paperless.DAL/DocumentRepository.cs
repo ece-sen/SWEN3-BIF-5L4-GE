@@ -22,7 +22,9 @@ namespace Paperless.DAL
             _logger.LogInformation("Repository: Fetching all documents from database");
             try
             {
-                var documents = await _context.Documents.ToListAsync();
+                var documents = await _context.Documents
+                    .Include(d => d.Favorite)
+                    .ToListAsync();
                 _logger.LogInformation("Repository: Retrieved {Count} documents", documents.Count);
                 return documents;
             }
@@ -37,7 +39,9 @@ namespace Paperless.DAL
             _logger.LogInformation("Repository: Fetching document with ID={Id}", id);
             try
             {
-                var document = await _context.Documents.FindAsync(id);
+                var document = await _context.Documents
+                    .Include(d => d.Favorite)
+                    .FirstOrDefaultAsync(d => d.Id == id);
                 if (document == null)
                 {
                     _logger.LogWarning("Repository: Document with ID={Id} not found", id);
@@ -69,8 +73,10 @@ namespace Paperless.DAL
             try
             {
                 return await _context.Documents
+                    .Include(d => d.Favorite)
                     .Where(d => ids.Contains(d.Id))
                     .ToListAsync();
+
             }
             catch (Exception ex)
             {
@@ -154,6 +160,100 @@ namespace Paperless.DAL
                 throw new DatabaseOperationException($"Error updating document {document.Id}", ex);
             }
 
+        }
+
+        public async Task<bool> IsFavoriteAsync(int documentId)
+        {
+            return await _context.Favorites.AnyAsync(f => f.DocumentId == documentId);
+        }
+
+        public async Task<bool> AddFavoriteAsync(int documentId)
+        {
+            _logger.LogInformation("Repository: Adding favorite for document {Id}", documentId);
+
+            try
+            {
+                // ensure document exists (and keep your current behavior)
+                var doc = await _context.Documents.FindAsync(documentId);
+                if (doc == null)
+                    throw new DocumentNotFoundException(documentId);
+
+                // if already favorited, do nothing
+                bool exists = await _context.Favorites.AnyAsync(f => f.DocumentId == documentId);
+                if (exists)
+                {
+                    _logger.LogInformation("Repository: Document {Id} already favorited", documentId);
+                    return false;
+                }
+
+                _context.Favorites.Add(new Favorite { DocumentId = documentId });
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Repository: Favorite created for document {Id}", documentId);
+                return true;
+            }
+            catch (DocumentNotFoundException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Repository: Error adding favorite for document {Id}", documentId);
+                throw new DatabaseOperationException($"Error adding favorite for document {documentId}", ex);
+            }
+        }
+
+        public async Task<bool> RemoveFavoriteAsync(int documentId)
+        {
+            _logger.LogInformation("Repository: Removing favorite for document {Id}", documentId);
+
+            try
+            {
+                // ensure document exists
+                var doc = await _context.Documents.FindAsync(documentId);
+                if (doc == null)
+                    throw new DocumentNotFoundException(documentId);
+
+                var fav = await _context.Favorites.FirstOrDefaultAsync(f => f.DocumentId == documentId);
+                if (fav == null)
+                {
+                    _logger.LogInformation("Repository: No favorite existed for document {Id}", documentId);
+                    return false;
+                }
+
+                _context.Favorites.Remove(fav);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Repository: Favorite removed for document {Id}", documentId);
+                return true;
+            }
+            catch (DocumentNotFoundException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Repository: Error removing favorite for document {Id}", documentId);
+                throw new DatabaseOperationException($"Error removing favorite for document {documentId}", ex);
+            }
+        }
+
+        public async Task<List<Document>> GetFavoritesAsync()
+        {
+            _logger.LogInformation("Repository: Fetching favorite documents");
+
+            try
+            {
+                return await _context.Documents
+                    .Include(d => d.Favorite)
+                    .Where(d => d.Favorite != null)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Repository: Error fetching favorites");
+                throw new DatabaseOperationException("Error fetching favorite documents", ex);
+            }
         }
 
     }

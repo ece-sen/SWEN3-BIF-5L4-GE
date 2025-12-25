@@ -271,4 +271,90 @@ public class DocumentService : IDocumentService
 
         return _mapper.Map<List<DocumentDto>>(documents);
     }
+
+    public async Task<bool> IsFavoriteAsync(int id)
+    {
+        _logger.LogInformation("Service: Checking favorite state for document {Id}", id);
+        try
+        {
+            return await _repository.IsFavoriteAsync(id);
+        }
+        catch (DatabaseOperationException ex)
+        {
+            _logger.LogError(ex, "Database error while checking favorite state for {Id}", id);
+            throw new DocumentServiceException("Error while checking favorite state.", ex);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while checking favorite state for {Id}", id);
+            throw new DocumentServiceException("Unexpected error while checking favorite state.", ex);
+        }
+    }
+
+    public async Task<bool> AddFavoriteAsync(int id)
+    {
+        _logger.LogInformation("Service: Adding favorite for document {Id}", id);
+        try
+        {
+            return await _repository.AddFavoriteAsync(id);
+        }
+        catch (DocumentNotFoundException)
+        {
+            throw;
+        }
+        catch (DatabaseOperationException ex)
+        {
+            _logger.LogError(ex, "Database error while adding favorite for {Id}", id);
+            throw new DocumentServiceException("Error while adding favorite.", ex);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while adding favorite for {Id}", id);
+            throw new DocumentServiceException("Unexpected error while adding favorite.", ex);
+        }
+    }
+
+    public async Task<bool> RemoveFavoriteAsync(int id)
+    {
+        _logger.LogInformation("Service: Removing favorite for document {Id}", id);
+        try
+        {
+            return await _repository.RemoveFavoriteAsync(id);
+        }
+        catch (DocumentNotFoundException)
+        {
+            throw;
+        }
+        catch (DatabaseOperationException ex)
+        {
+            _logger.LogError(ex, "Database error while removing favorite for {Id}", id);
+            throw new DocumentServiceException("Error while removing favorite.", ex);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while removing favorite for {Id}", id);
+            throw new DocumentServiceException("Unexpected error while removing favorite.", ex);
+        }
+    }
+
+    public async Task<List<DocumentDto>> GetFavoritesAsync()
+    {
+        _logger.LogInformation("Service: Fetching favorites");
+        try
+        {
+            var docs = await _repository.GetFavoritesAsync();
+            return _mapper.Map<List<DocumentDto>>(docs);
+        }
+        catch (DatabaseOperationException ex)
+        {
+            _logger.LogError(ex, "Database error while fetching favorites");
+            throw new DocumentServiceException("Error while fetching favorites.", ex);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while fetching favorites");
+            throw new DocumentServiceException("Unexpected error while fetching favorites.", ex);
+        }
+    }
+
 }

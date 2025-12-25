@@ -12,4 +12,9 @@ public interface IDocumentService
     Task<DocumentDto> UpdateDocumentAsync(int id, DocumentDto dto);
     Task<bool>UpdateSummaryAsync(int id, string summary);
     Task<List<DocumentDto>> SearchDocumentsAsync(string query);
+    Task<bool> AddFavoriteAsync(int id);
+    Task<bool> RemoveFavoriteAsync(int id);
+    Task<List<DocumentDto>> GetFavoritesAsync();
+    Task<bool> IsFavoriteAsync(int id);
+
 }

@@ -10,4 +10,8 @@ public interface IDocumentRepository
     Task<Document> AddDocumentAsync(Document document);
     Task DeleteDocumentAsync(int id);
     Task<Document> UpdateDocumentAsync(Document document);
+    Task<bool> AddFavoriteAsync(int documentId);
+    Task<bool> RemoveFavoriteAsync(int documentId);
+    Task<List<Document>> GetFavoritesAsync();
+    Task<bool> IsFavoriteAsync(int documentId);
 }

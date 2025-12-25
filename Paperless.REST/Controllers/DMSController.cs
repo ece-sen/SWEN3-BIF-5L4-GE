@@ -226,5 +226,109 @@ namespace Paperless.REST.Controllers
             var result = await _documentService.SearchDocumentsAsync(q);
             return Ok(result);
         }
+
+        [HttpPost("{id}/favorite")]
+        public async Task<IActionResult> AddFavorite(int id)
+        {
+            _logger.LogInformation("POST /api/DMS/{Id}/favorite called", id);
+
+            try
+            {
+                var created = await _documentService.AddFavoriteAsync(id);
+                if (!created)
+                    return Conflict(new { message = "Document is already favorited." });
+
+                return NoContent();
+            }
+            catch (DocumentNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Document {Id} not found while favoriting", id);
+                return NotFound(new { message = ex.Message });
+            }
+            catch (DocumentServiceException ex)
+            {
+                _logger.LogError(ex, "Service error while favoriting document {Id}", id);
+                return StatusCode(500, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error while favoriting document {Id}", id);
+                return StatusCode(500, new { message = "Unexpected error: " + ex.Message });
+            }
+        }
+
+        [HttpDelete("{id}/favorite")]
+        public async Task<IActionResult> RemoveFavorite(int id)
+        {
+            _logger.LogInformation("DELETE /api/DMS/{Id}/favorite called", id);
+
+            try
+            {
+                var removed = await _documentService.RemoveFavoriteAsync(id);
+                if (!removed)
+                    return NotFound(new { message = "Favorite not found for this document." });
+
+                return NoContent();
+            }
+            catch (DocumentNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Document {Id} not found while unfavoriting", id);
+                return NotFound(new { message = ex.Message });
+            }
+            catch (DocumentServiceException ex)
+            {
+                _logger.LogError(ex, "Service error while unfavoriting document {Id}", id);
+                return StatusCode(500, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error while unfavoriting document {Id}", id);
+                return StatusCode(500, new { message = "Unexpected error: " + ex.Message });
+            }
+        }
+
+        [HttpGet("favorites")]
+        public async Task<IActionResult> GetFavorites()
+        {
+            _logger.LogInformation("GET /api/DMS/favorites called");
+
+            try
+            {
+                var favs = await _documentService.GetFavoritesAsync();
+                return Ok(favs);
+            }
+            catch (DocumentServiceException ex)
+            {
+                _logger.LogError(ex, "Service error while fetching favorites");
+                return StatusCode(500, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error while fetching favorites");
+                return StatusCode(500, new { message = "Unexpected error: " + ex.Message });
+            }
+        }
+        [HttpGet("{id}/favorite")]
+        public async Task<IActionResult> IsFavorite(int id)
+        {
+            _logger.LogInformation("GET /api/DMS/{Id}/favorite called", id);
+
+            try
+            {
+                var isFav = await _documentService.IsFavoriteAsync(id);
+                return Ok(new { documentId = id, isFavorite = isFav });
+            }
+            catch (DocumentServiceException ex)
+            {
+                _logger.LogError(ex, "Service error while checking favorite for {Id}", id);
+                return StatusCode(500, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error while checking favorite for {Id}", id);
+                return StatusCode(500, new { message = "Unexpected error: " + ex.Message });
+            }
+        }
+
     }
 }
