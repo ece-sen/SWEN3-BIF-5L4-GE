@@ -90,6 +90,8 @@ services:
       - MINIO_SECRET_KEY=minioadmin
       - MINIO_BUCKET=documents
       - GENAI_QUEUE=genai_queue
+      - INDEXING_QUEUE=indexing_queue
+      - ELASTIC_URL=http://elasticsearch:9200
     depends_on:
       rabbitmq:
         condition: service_healthy

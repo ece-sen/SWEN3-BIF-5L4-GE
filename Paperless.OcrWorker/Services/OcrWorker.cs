@@ -49,6 +49,8 @@ namespace Paperless.OcrWorker.Services
                
                 await PublishToGenAiQueueAsync(id, text);
 
+                await PublishToIndexingQueueAsync(id);
+
             }
             finally
             {
@@ -100,6 +102,41 @@ namespace Paperless.OcrWorker.Services
             catch (Exception ex)
             {
                 Console.WriteLine($"[OCRWorker] ERROR while publishing to GenAI queue: {ex}");
+            }
+        }
+
+        private async Task PublishToIndexingQueueAsync(string documentId)
+        {
+            try
+            {
+                string rabbitHost = Environment.GetEnvironmentVariable("RABBITMQ_HOST") ?? "rabbitmq";
+                string queueName = Environment.GetEnvironmentVariable("INDEXING_QUEUE") ?? "indexing_queue";
+                
+                var factory = new ConnectionFactory
+                {
+                    HostName = rabbitHost,
+                    UserName = "guest",
+                    Password = "guest"
+                };
+
+                await using var connection = await factory.CreateConnectionAsync();
+                await using var channel = await connection.CreateChannelAsync();
+                await channel.QueueDeclareAsync(queueName, durable: false, exclusive: false, autoDelete: false,
+                    arguments: null);
+                
+                var body = Encoding.UTF8.GetBytes(documentId);
+                
+                await channel.BasicPublishAsync(
+                    exchange: "",
+                    routingKey: queueName,
+                    mandatory: false,
+                    body: body);
+                Console.WriteLine(
+                    $"[OCRWorker] Published OCR-completed message for document {documentId} to Indexing queue '{queueName}'.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[OCRWorker] ERROR while publishing to Indexing queue: {ex}");
             }
         }
     }
