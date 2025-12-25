@@ -216,5 +216,15 @@ namespace Paperless.REST.Controllers
             }
 
         }
+
+        [HttpGet("search")]
+        public async Task<IActionResult> Search([FromQuery] string q)
+        {
+            if (string.IsNullOrWhiteSpace(q) || q.Length < 2)
+                return Ok(await _documentService.GetAllDocumentsAsync());
+
+            var result = await _documentService.SearchDocumentsAsync(q);
+            return Ok(result);
+        }
     }
 }

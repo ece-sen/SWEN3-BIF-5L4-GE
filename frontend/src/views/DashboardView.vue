@@ -26,6 +26,13 @@
     <section class="card">
       <h2>Available Documents</h2>
 
+      <input
+        type="text"
+        v-model="searchQuery"
+        placeholder="Search documents..."
+        class="search-input"
+      />
+
       <div v-if="loading" class="loading">Loading documents...</div>
 
       <ul v-else>
@@ -49,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 
 interface Document {
   id: number
@@ -60,6 +67,22 @@ interface Document {
 const documents = ref<Document[]>([])
 const loading = ref(true)
 const errorMessage = ref<string | null>(null)
+const searchQuery = ref('')
+
+let searchTimeout: number | undefined
+
+watch(searchQuery, (value) => {
+  clearTimeout(searchTimeout)
+
+  searchTimeout = window.setTimeout(() => {
+    if (value.trim() === '') {
+      fetchDocuments()
+    } else {
+      fetchDocumentsBySearch()
+    }
+  }, 300)
+})
+
 
 // NEW: Selected File
 const selectedFile = ref<File | null>(null)
@@ -99,6 +122,34 @@ const fetchDocuments = async () => {
     loading.value = false
   }
 }
+
+const fetchDocumentsBySearch = async () => {
+  loading.value = true
+  errorMessage.value = null
+
+  try {
+    const url = searchQuery.value.trim()
+      ? `http://localhost:8081/api/DMS/search?q=${encodeURIComponent(searchQuery.value)}`
+      : 'http://localhost:8081/api/DMS'
+
+    const response = await fetch(url)
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}))
+      throw new Error(err.message || `Server returned ${response.status}`)
+    }
+
+    documents.value = await response.json()
+  }
+  catch (error: any) {
+    console.error('Search error:', error)
+    errorMessage.value = error.message || 'Search failed.'
+  }
+  finally {
+    loading.value = false
+  }
+}
+
 
 // Upload document with FormData
 const uploadDocument = async () => {
@@ -168,7 +219,9 @@ const deleteDocument = async (id: number) => {
   }
 }
 
-onMounted(fetchDocuments)
+onMounted(() => {
+  fetchDocuments()
+})
 </script>
 
 <style scoped>
@@ -284,5 +337,14 @@ ul {
   margin-bottom: 1rem;
   font-weight: 500;
   border: 1px solid #fecaca;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #d1d5db;
+  font-size: 0.95rem;
 }
 </style>

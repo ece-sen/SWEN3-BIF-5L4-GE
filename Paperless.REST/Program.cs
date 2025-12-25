@@ -3,10 +3,13 @@ using Minio;
 using Minio.DataModel.Args;
 using Paperless.DAL;
 using Paperless.Services;
+using Paperless.Services.Elasticsearch;
 using Paperless.Services.Mappings;
 using Paperless.Services.RabbitMq;
 using Serilog;
 using Serilog.AspNetCore;
+using Elastic.Clients.Elasticsearch;
+using Paperless.Services.Elasticsearch;
 
 
 Log.Logger = new LoggerConfiguration()
@@ -47,6 +50,23 @@ try
             .WithSSL(Convert.ToBoolean(cfg["UseSSL"]))
             .Build();
     });
+
+    // Elasticsearch Client
+    builder.Services.AddSingleton(_ =>
+    {
+        var settings = new ElasticsearchClientSettings(
+            new Uri(builder.Configuration["ELASTIC_URL"] ?? "http://elasticsearch:9200")
+        ).DefaultIndex("documents");
+
+        return new ElasticsearchClient(settings);
+    });
+
+    // Elasticsearch READ wrapper
+    builder.Services.AddScoped<IElasticSearchClientWrapper, ElasticSearchClientWrapper>();
+
+    // Search Service
+    builder.Services.AddScoped<IElasticsearchSearchService, ElasticsearchSearchService>();
+
 
 
     builder.Services.AddCors(options =>

@@ -1,4 +1,5 @@
 ﻿using Paperless.DTOs;
+using Paperless.Models;
 
 namespace Paperless.Services;
 
@@ -10,4 +11,5 @@ public interface IDocumentService
     Task<bool> DeleteDocumentAsync(int id);
     Task<DocumentDto> UpdateDocumentAsync(int id, DocumentDto dto);
     Task<bool>UpdateSummaryAsync(int id, string summary);
+    Task<List<DocumentDto>> SearchDocumentsAsync(string query);
 }

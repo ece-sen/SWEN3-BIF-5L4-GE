@@ -58,6 +58,27 @@ namespace Paperless.DAL
                 throw new DatabaseOperationException($"Error fetching document with ID {id}", ex);
             }
         }
+
+        public async Task<List<Document>> GetDocumentsByIdsAsync(List<int> ids)
+        {
+            _logger.LogInformation(
+                "Repository: Fetching documents by IDs [{Ids}]",
+                string.Join(",", ids)
+            );
+
+            try
+            {
+                return await _context.Documents
+                    .Where(d => ids.Contains(d.Id))
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Repository: Error fetching documents by IDs");
+                throw new DatabaseOperationException("Error fetching documents by IDs", ex);
+            }
+        }
+
         public async Task<Document> AddDocumentAsync(Document document)
         {
             _logger.LogInformation("Repository: Adding new document '{Title}'", document.Title);

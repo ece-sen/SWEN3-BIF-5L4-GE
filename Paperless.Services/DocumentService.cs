@@ -20,9 +20,10 @@ public class DocumentService : IDocumentService
     private readonly ILogger<DocumentService> _logger;
     private readonly IMinioClient _minio;
     private readonly IConfiguration _config;
+    private readonly IElasticsearchSearchService _searchService;
 
 
-    public DocumentService(IDocumentRepository repository, IMapper mapper, IRabbitMqProducer queue, ILogger<DocumentService> logger, IMinioClient minio, IConfiguration config)
+    public DocumentService(IDocumentRepository repository, IMapper mapper, IRabbitMqProducer queue, ILogger<DocumentService> logger, IMinioClient minio, IConfiguration config, IElasticsearchSearchService searchService)
     {
         _repository = repository;
         _mapper = mapper;
@@ -30,7 +31,7 @@ public class DocumentService : IDocumentService
         _logger = logger;
         _minio = minio;
         _config = config;
-
+        _searchService = searchService;
     }
 
     public async Task<List<DocumentDto>> GetAllDocumentsAsync()
@@ -255,4 +256,19 @@ public class DocumentService : IDocumentService
         }
     }
 
+    public async Task<List<DocumentDto>> SearchDocumentsAsync(string query)
+    {
+        _logger.LogInformation("Service: Searching documents with query '{Query}'", query);
+
+        var ids = await _searchService.SearchDocumentIdsAsync(query);
+
+        if (!ids.Any())
+            return new List<DocumentDto>();
+
+        var documents = await _repository.GetDocumentsByIdsAsync(
+            ids.Select(int.Parse).ToList()
+        );
+
+        return _mapper.Map<List<DocumentDto>>(documents);
+    }
 }
