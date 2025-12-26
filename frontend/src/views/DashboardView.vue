@@ -2,17 +2,15 @@
   <main>
     <h1>Document Dashboard</h1>
 
-    <!-- Error Section-->
     <div v-if="errorMessage" class="error-banner">
       {{ errorMessage }}
     </div>
 
-    <!-- Upload Section -->
     <section class="card">
       <h2>Upload new document</h2>
 
       <form @submit.prevent="uploadDocument" class="form">
-        <input 
+        <input
           type="file"
           @change="onFileSelected"
           accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.txt"
@@ -22,7 +20,6 @@
       </form>
     </section>
 
-    <!-- Documents List -->
     <section class="card">
       <h2>Available Documents</h2>
 
@@ -33,11 +30,16 @@
         class="search-input"
       />
 
+      <label style="display:block; margin-bottom:1rem;">
+        <input type="checkbox" v-model="showOnlyFavorites" />
+        Show favorites only
+      </label>
+
       <div v-if="loading" class="loading">Loading documents...</div>
 
       <ul v-else>
         <li
-          v-for="doc in documents"
+          v-for="doc in filteredDocuments"
           :key="doc.id"
           class="document-item"
         >
@@ -46,9 +48,27 @@
             <span class="doc-category">({{ doc.category }})</span>
           </router-link>
 
-          <button @click="deleteDocument(doc.id)" class="delete-btn">
-            Delete
-          </button>
+          <div>
+            <button
+              @click="toggleFavorite(doc.id)"
+              style="
+                background:none;
+                border:none;
+                cursor:pointer;
+                margin-right:0.5rem;
+                color:#facc15;
+                font-size:1.2rem;
+              "
+              title="Toggle favorite"
+            >
+              {{ favoriteIds.has(doc.id) ? '\u2605' : '\u2606' }}
+            </button>
+
+
+            <button @click="deleteDocument(doc.id)" class="delete-btn">
+              Delete
+            </button>
+          </div>
         </li>
       </ul>
     </section>
@@ -56,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 
 interface Document {
   id: number
@@ -68,6 +88,10 @@ const documents = ref<Document[]>([])
 const loading = ref(true)
 const errorMessage = ref<string | null>(null)
 const searchQuery = ref('')
+const selectedFile = ref<File | null>(null)
+
+const favoriteIds = ref<Set<number>>(new Set())
+const showOnlyFavorites = ref(false)
 
 let searchTimeout: number | undefined
 
@@ -83,144 +107,84 @@ watch(searchQuery, (value) => {
   }, 300)
 })
 
+const filteredDocuments = computed(() => {
+  if (!showOnlyFavorites.value) return documents.value
+  return documents.value.filter(d => favoriteIds.value.has(d.id))
+})
 
-// NEW: Selected File
-const selectedFile = ref<File | null>(null)
-
-// Handle file selection (TypeScript clean fix)
-const onFileSelected = (event: Event) => {
-  const input = event.target as HTMLInputElement
-
-  const file = input.files?.[0]  // file is File | undefined
-  if (!file) {
-    selectedFile.value = null
-    return
-  }
-
-  selectedFile.value = file  // file is guaranteed File here
+const loadFavorites = async () => {
+  const res = await fetch('http://localhost:8081/api/DMS/favorites')
+  const favs: Document[] = await res.json()
+  favoriteIds.value = new Set(favs.map(f => f.id))
 }
 
-// Fetch documents from backend
+const toggleFavorite = async (id: number) => {
+  const isFav = favoriteIds.value.has(id)
+
+  await fetch(`http://localhost:8081/api/DMS/${id}/favorite`, {
+    method: isFav ? 'DELETE' : 'POST'
+  })
+
+  if (isFav) favoriteIds.value.delete(id)
+  else favoriteIds.value.add(id)
+}
+
+const onFileSelected = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  selectedFile.value = input.files?.[0] ?? null
+}
+
 const fetchDocuments = async () => {
   loading.value = true
-  errorMessage.value = null
-
-  try {
-    const response = await fetch('http://localhost:8081/api/DMS')
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}))
-      throw new Error(err.message || `Server returned ${response.status}`)
-    }
-
-    documents.value = await response.json()
-  } 
-  catch (error: any) {
-    console.error('Error fetching documents:', error)
-    errorMessage.value = error.message || 'Failed to load documents.'
-  } 
-  finally {
-    loading.value = false
-  }
+  const res = await fetch('http://localhost:8081/api/DMS')
+  documents.value = await res.json()
+  loading.value = false
 }
 
 const fetchDocumentsBySearch = async () => {
   loading.value = true
-  errorMessage.value = null
-
-  try {
-    const url = searchQuery.value.trim()
-      ? `http://localhost:8081/api/DMS/search?q=${encodeURIComponent(searchQuery.value)}`
-      : 'http://localhost:8081/api/DMS'
-
-    const response = await fetch(url)
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}))
-      throw new Error(err.message || `Server returned ${response.status}`)
-    }
-
-    documents.value = await response.json()
-  }
-  catch (error: any) {
-    console.error('Search error:', error)
-    errorMessage.value = error.message || 'Search failed.'
-  }
-  finally {
-    loading.value = false
-  }
+  const res = await fetch(
+    `http://localhost:8081/api/DMS/search?q=${encodeURIComponent(searchQuery.value)}`
+  )
+  documents.value = await res.json()
+  loading.value = false
 }
 
-
-// Upload document with FormData
 const uploadDocument = async () => {
-  errorMessage.value = null
-
-  if (!selectedFile.value) {
-    errorMessage.value = "Please select a file."
-    return
-  }
+  if (!selectedFile.value) return
 
   const file = selectedFile.value
-
-  // Extract title (filename without extension)
-  const originalName = file.name
-  const dotIndex = originalName.lastIndexOf(".")
-  const title = dotIndex !== -1 ? originalName.substring(0, dotIndex) : originalName
-
-  // Extract category from file extension
-  const ext = originalName.split(".").pop()?.toLowerCase() || "unknown"
-  const category = ext
+  const name = file.name
+  const title = name.substring(0, name.lastIndexOf('.')) || name
+  const category = name.split('.').pop()?.toLowerCase() ?? 'unknown'
 
   const formData = new FormData()
-  formData.append("title", title)
-  formData.append("category", category)
-  formData.append("file", file)
+  formData.append('title', title)
+  formData.append('category', category)
+  formData.append('file', file)
 
-  try {
-    const response = await fetch('http://localhost:8081/api/DMS/upload', {
-      method: 'POST',
-      body: formData
-    })
+  await fetch('http://localhost:8081/api/DMS/upload', {
+    method: 'POST',
+    body: formData
+  })
 
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}))
-      throw new Error(err.message || `Upload failed with status ${response.status}`)
-    }
-
-    selectedFile.value = null
-    await fetchDocuments()
-  } 
-  catch (error: any) {
-    console.error('Error uploading document:', error)
-    errorMessage.value = error.message || 'Failed to upload document.'
-  }
+  selectedFile.value = null
+  fetchDocuments()
 }
 
-// Delete document
 const deleteDocument = async (id: number) => {
   if (!confirm('Are you sure you want to delete this document?')) return
-  errorMessage.value = null
 
-  try {
-    const response = await fetch(`http://localhost:8081/api/DMS/${id}`, {
-      method: 'DELETE'
-    })
+  await fetch(`http://localhost:8081/api/DMS/${id}`, {
+    method: 'DELETE'
+  })
 
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}))
-      throw new Error(err.message || `Delete failed with status ${response.status}`)
-    }
-
-    documents.value = documents.value.filter(d => d.id !== id)
-  } 
-  catch (error: any) {
-    console.error('Error deleting document:', error)
-    errorMessage.value = error.message || 'Failed to delete document.'
-  }
+  documents.value = documents.value.filter(d => d.id !== id)
 }
 
-onMounted(() => {
-  fetchDocuments()
+onMounted(async () => {
+  await loadFavorites()
+  await fetchDocuments()
 })
 </script>
 
