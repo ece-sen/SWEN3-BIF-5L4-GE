@@ -145,6 +145,18 @@ services:
     networks:
       - paperless_network
 
+  paperless_batch:
+   build:
+    context: .
+    dockerfile: Paperless.BatchProcess/Dockerfile
+   depends_on:
+    postgres:
+      condition: service_healthy
+   volumes:
+    - ./accesslogs:/data/accesslogs
+   networks:
+    - paperless_network
+
 volumes:
   postgres_data:
 

@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Paperless.BatchProcess": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}
