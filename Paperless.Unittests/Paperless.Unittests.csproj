@@ -33,14 +33,11 @@
       <ProjectReference Include="..\Paperless.Services\Paperless.Services.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Paperless.OcrWorker\Services\TestFiles\" />
-    </ItemGroup>
+	<ItemGroup>
+		<None Include="Paperless.OcrWorker/Services/TestFiles/test.pdf">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
 
-    <ItemGroup>
-      <None Update="Paperless.OcrWorker\Services\TestFiles\test.pdf">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-    </ItemGroup>
 
 </Project>
