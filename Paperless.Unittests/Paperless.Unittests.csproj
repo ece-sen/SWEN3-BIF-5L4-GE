@@ -36,8 +36,10 @@
 	<ItemGroup>
 		<None Include="Paperless.OcrWorker/Services/TestFiles/test.pdf">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<TargetPath>TestFiles/test.pdf</TargetPath>
 		</None>
 	</ItemGroup>
+
 
 
 </Project>
