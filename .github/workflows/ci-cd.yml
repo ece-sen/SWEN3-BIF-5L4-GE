@@ -1,0 +1,47 @@
+name: CI-CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  ci-cd:
+    runs-on: ubuntu-latest
+
+    steps:
+    # ------------------------
+    # CI PART
+    # ------------------------
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore Paperless.REST.sln
+
+    - name: Build solution
+      run: dotnet build Paperless.REST.sln --no-restore -c Release
+
+    - name: Run unit tests
+      run: dotnet test Paperless.REST.sln --no-build -c Release
+    # ------------------------
+    # CD PART
+    # ------------------------
+    - name: Docker Compose Build
+      run: docker compose build
+
+    - name: Docker Compose Up (Deployment Test)
+      run: docker compose up -d
+
+    - name: Wait for services to start
+      run: sleep 20
+
+    - name: Docker Compose Down
+      if: always()
+      run: docker compose down
