@@ -23,13 +23,14 @@ jobs:
         dotnet-version: '8.0.x'
 
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore Paperless.sln
 
     - name: Build solution
-      run: dotnet build --no-restore -c Release
+      run: dotnet build Paperless.sln --no-restore -c Release
 
     - name: Run unit tests
-      run: dotnet test --no-build -c Release
+      run: dotnet test Paperless.sln --no-build -c Release
+
 
     # ------------------------
     # CD PART
