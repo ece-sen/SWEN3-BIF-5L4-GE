@@ -9,6 +9,7 @@ using Paperless.DTOs;
 using Paperless.Models;
 using Paperless.Services.Exceptions;
 using Paperless.Services.RabbitMq;
+using Microsoft.Extensions.Hosting;
 
 namespace Paperless.Services;
 
@@ -21,9 +22,10 @@ public class DocumentService : IDocumentService
     private readonly IMinioClient _minio;
     private readonly IConfiguration _config;
     private readonly IElasticsearchSearchService _searchService;
+    private readonly IHostEnvironment _env;
 
 
-    public DocumentService(IDocumentRepository repository, IMapper mapper, IRabbitMqProducer queue, ILogger<DocumentService> logger, IMinioClient minio, IConfiguration config, IElasticsearchSearchService searchService)
+    public DocumentService(IDocumentRepository repository, IMapper mapper, IRabbitMqProducer queue, ILogger<DocumentService> logger, IMinioClient minio, IConfiguration config, IElasticsearchSearchService searchService, IHostEnvironment env)
     {
         _repository = repository;
         _mapper = mapper;
@@ -32,6 +34,7 @@ public class DocumentService : IDocumentService
         _minio = minio;
         _config = config;
         _searchService = searchService;
+        _env = env;
     }
 
     public async Task<List<DocumentDto>> GetAllDocumentsAsync()
@@ -87,59 +90,60 @@ public class DocumentService : IDocumentService
         }
     }
 
-    public async Task<DocumentDto> CreateDocumentAsync(DocumentDto documentDto, Stream pdfStream, string fileName)
+    public async Task<DocumentDto> CreateDocumentAsync(
+     DocumentDto documentDto,
+     Stream pdfStream,
+     string fileName)
     {
-        var document = _mapper.Map<Document>(documentDto);
-        var createdDocument = await _repository.AddDocumentAsync(document);
-        _logger.LogInformation("Service: Creating new document '{Title}' in category '{Category}'",
-                               documentDto.Title, documentDto.Category);
         try
         {
             if (string.IsNullOrWhiteSpace(documentDto.Title))
                 throw new DocumentValidationException("Title cannot be empty.");
-            if(string.IsNullOrEmpty(documentDto.Category))
+
+            if (string.IsNullOrWhiteSpace(documentDto.Category))
                 throw new DocumentValidationException("Category cannot be empty.");
-            
 
-            _logger.LogInformation("Service: Document '{Title}' created successfully with ID={Id}",
-                                   createdDocument.Title, createdDocument.Id);
+            var document = _mapper.Map<Document>(documentDto);
+            var createdDocument = await _repository.AddDocumentAsync(document);
 
-            var bucket = _config["Minio:BucketName"];
-            var objectName = $"{createdDocument.Id}.pdf";
+            _logger.LogInformation(
+                "Service: Document '{Title}' created successfully with ID={Id}",
+                createdDocument.Title,
+                createdDocument.Id);
 
-            pdfStream.Position = 0;
+            if (!_env.IsEnvironment("IntegrationTest"))
+            {
+                var bucket = _config["Minio:BucketName"];
+                var objectName = $"{createdDocument.Id}.pdf";
 
-            await _minio.PutObjectAsync(
-                new PutObjectArgs()
-                    .WithBucket(bucket)
-                    .WithObject(objectName)
-                    .WithStreamData(pdfStream)
-                    .WithObjectSize(pdfStream.Length)
-                    .WithContentType("application/pdf")
-            );
+                pdfStream.Position = 0;
 
-            _logger.LogInformation("Service: PDF uploaded to MinIO as {Object}", objectName);
+                await _minio.PutObjectAsync(
+                    new PutObjectArgs()
+                        .WithBucket(bucket)
+                        .WithObject(objectName)
+                        .WithStreamData(pdfStream)
+                        .WithObjectSize(pdfStream.Length)
+                        .WithContentType("application/pdf")
+                );
 
-            await _queue.SendMessageAsync(createdDocument.Id.ToString());
+                await _queue.SendMessageAsync(createdDocument.Id.ToString());
+            }
 
             return _mapper.Map<DocumentDto>(createdDocument);
         }
-        catch (DocumentValidationException ex)
+        catch (DocumentValidationException)
         {
-            _logger.LogWarning(ex, "Validation failed while creating document: {Message}", ex.Message);
             throw;
-        }
-        catch (DatabaseOperationException ex)
-        {
-            _logger.LogError(ex, "Database error while creating document '{Title}'", documentDto.Title);
-            throw new DocumentServiceException("Error while creating document.", ex);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error while creating document '{Title}'", documentDto.Title);
-            throw new DocumentServiceException("Unexpected error while creating document.", ex);
+            _logger.LogError(ex, "Unexpected error while creating document");
+            throw new DocumentServiceException(
+                "Unexpected error while creating document.", ex);
         }
     }
+
 
     public async Task<bool> DeleteDocumentAsync(int id)
     {

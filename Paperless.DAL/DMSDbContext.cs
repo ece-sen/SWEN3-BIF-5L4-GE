@@ -10,6 +10,7 @@ namespace Paperless.DAL
         }
         public DbSet<Document> Documents { get; set; }
         public DbSet<Favorite> Favorites { get; set; }
+        public DbSet<DocumentDailyAccess> DocumentDailyAccesses { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
