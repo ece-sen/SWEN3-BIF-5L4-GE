@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<IsTestProject>true</IsTestProject>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+
+		<!-- WICHTIG für NUnit + WebApplicationFactory -->
+		<DisableShadowCopy>true</DisableShadowCopy>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- NUnit -->
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+		<PackageReference Include="NUnit" Version="3.14.0" />
+		<PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
+
+		<!-- INTEGRATION TEST -->
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.0" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.11" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Paperless.REST\Paperless.REST.csproj" />
+		<ProjectReference Include="..\Paperless.DAL\Paperless.DAL.csproj" />
+	</ItemGroup>
+
+</Project>

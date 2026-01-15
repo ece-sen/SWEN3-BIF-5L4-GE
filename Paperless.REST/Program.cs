@@ -97,19 +97,29 @@ try
     using (var scope = app.Services.CreateScope())
     {
         var db = scope.ServiceProvider.GetRequiredService<DMSDbContext>();
-        db.Database.Migrate();
-        Log.Information("Database migration applied successfully");
+
+        if (db.Database.IsRelational())
+        {
+            db.Database.Migrate();
+            Log.Information("Database migration applied successfully");
+        }
     }
 
-    using (var scope = app.Services.CreateScope())
+    if (!app.Environment.IsEnvironment("IntegrationTest"))
     {
-        var minio = scope.ServiceProvider.GetRequiredService<IMinioClient>();
-        var bucket = builder.Configuration["Minio:BucketName"];
-
-        bool exists = await minio.BucketExistsAsync(new BucketExistsArgs().WithBucket(bucket));
-        if (!exists)
+        using (var scope = app.Services.CreateScope())
         {
-            await minio.MakeBucketAsync(new MakeBucketArgs().WithBucket(bucket));
+            var minio = scope.ServiceProvider.GetRequiredService<IMinioClient>();
+            var bucket = builder.Configuration["Minio:BucketName"];
+
+            bool exists = await minio.BucketExistsAsync(
+                new BucketExistsArgs().WithBucket(bucket));
+
+            if (!exists)
+            {
+                await minio.MakeBucketAsync(
+                    new MakeBucketArgs().WithBucket(bucket));
+            }
         }
     }
 
@@ -125,3 +135,4 @@ finally
     Log.Information("Shutting down logger...");
     Log.CloseAndFlush();
 }
+public partial class Program { }
