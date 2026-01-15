@@ -2,6 +2,7 @@
 using Paperless.BatchProcess.Models;
 using Paperless.DAL;
 using Paperless.Models;
+using Paperless.BatchProcess.Exceptions;
 
 namespace Paperless.BatchProcess.Services;
 
@@ -18,6 +19,14 @@ public class PostgresAccessLogWriter : IAccessLogWriter
     {
         foreach (var entry in entries)
         {
+            var documentExists = await _context.Documents
+                .AnyAsync(d => d.Id == entry.DocumentId);
+
+            if (!documentExists)
+            {
+                throw new DocumentNotFoundException(entry.DocumentId);
+            }
+
             var existing = await _context.DocumentDailyAccesses
                 .FirstOrDefaultAsync(x =>
                     x.DocumentId == entry.DocumentId &&

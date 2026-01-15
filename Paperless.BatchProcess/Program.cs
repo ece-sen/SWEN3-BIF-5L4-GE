@@ -2,6 +2,8 @@
 using Paperless.BatchProcess.Services;
 using Microsoft.EntityFrameworkCore;
 using Paperless.DAL;
+using Paperless.BatchProcess.Exceptions;
+
 
 var config = new ConfigurationBuilder()
     .SetBasePath(AppContext.BaseDirectory)
@@ -54,11 +56,20 @@ foreach (var file in files)
 {
     Console.WriteLine($"\nProcessing {Path.GetFileName(file)}");
 
-    var entries = reader.Read(file);
-
-    await writer.SaveAsync(entries);
-
-    archiver.Archive(file);
-
-    Console.WriteLine("Stored in DB and archived");
+    try
+    {
+        var entries = reader.Read(file);
+        await writer.SaveAsync(entries);
+        archiver.Archive(file);
+        Console.WriteLine("Stored in DB and archived");
+    }
+    catch (DocumentNotFoundException ex)
+    {
+        Console.WriteLine($"Error: {ex.Message} Skipping file.");
+        Console.WriteLine(ex.Message);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Unexpected error: {ex.Message}");
+    }
 }
