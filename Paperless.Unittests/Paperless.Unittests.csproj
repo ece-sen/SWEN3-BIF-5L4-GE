@@ -18,7 +18,8 @@
         <PackageReference Include="NUnit" Version="3.14.0" />
         <PackageReference Include="NUnit.Analyzers" Version="3.9.0" />
         <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
-    </ItemGroup>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.0" />
+	</ItemGroup>
 
     <ItemGroup>
         <Using Include="NUnit.Framework" />
@@ -33,14 +34,13 @@
       <ProjectReference Include="..\Paperless.Services\Paperless.Services.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Paperless.OcrWorker\Services\TestFiles\" />
-    </ItemGroup>
+	<ItemGroup>
+		<None Include="Paperless.OcrWorker/Services/TestFiles/test.pdf">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<TargetPath>TestFiles/test.pdf</TargetPath>
+		</None>
+	</ItemGroup>
 
-    <ItemGroup>
-      <None Update="Paperless.OcrWorker\Services\TestFiles\test.pdf">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-    </ItemGroup>
+
 
 </Project>
