@@ -28,7 +28,7 @@ FROM mcr.microsoft.com/dotnet/runtime:8.0 AS final
 RUN apt-get update && apt-get install -y cron
 WORKDIR /app
 COPY --from=publish /app/publish .
-RUN echo "* * * * * dotnet /app/Paperless.BatchProcess.dll | tee -a /var/log/batch.log >> /proc/1/fd/1 2>&1" \
+RUN echo "0 1 * * * dotnet /app/Paperless.BatchProcess.dll | tee -a /var/log/batch.log >> /proc/1/fd/1 2>&1" \
     > /etc/cron.d/batch-cron
 RUN crontab /etc/cron.d/batch-cron
 RUN touch /var/log/batch.log
